@@ -1,8 +1,44 @@
+﻿"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import ConstellationBackground from "../components/ConstellationBackground";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { message?: string };
+        throw new Error(data.message ?? "Login failed");
+      }
+
+      router.push("/admin/console");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#121b14] via-[#0f1713] to-[#0b120d] text-white">
       <ConstellationBackground />
@@ -30,10 +66,10 @@ export default function AdminLoginPage() {
           </div>
 
           <p className="mt-4 text-sm text-white/60">
-            운영자 전용 페이지입니다. 로그인 후 멤버 정보를 관리할 수 있습니다.
+            Admins only. Sign in to access the management console.
           </p>
 
-          <form className="mt-6 space-y-4" action="#" method="post">
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             <label className="block">
               <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
                 ID
@@ -43,6 +79,8 @@ export default function AdminLoginPage() {
                 name="username"
                 placeholder="ID"
                 autoComplete="username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
                 className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-300/60 focus:outline-none"
                 required
               />
@@ -55,18 +93,27 @@ export default function AdminLoginPage() {
               <input
                 type="password"
                 name="password"
-                placeholder="••••••••"
+                placeholder="Password"
                 autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
                 className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80 placeholder:text-white/30 focus:border-emerald-300/60 focus:outline-none"
                 required
               />
             </label>
 
+            {error && (
+              <p className="rounded-2xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-xs text-rose-100">
+                {error}
+              </p>
+            )}
+
             <button
               type="submit"
-              className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-400/15 text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100 transition-colors hover:border-emerald-300/70 hover:bg-emerald-400/25"
+              disabled={isLoading}
+              className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-emerald-300/40 bg-emerald-400/15 text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100 transition-colors hover:border-emerald-300/70 hover:bg-emerald-400/25 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign in
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
