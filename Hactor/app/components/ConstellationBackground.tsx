@@ -2,16 +2,50 @@
 
 import { useEffect, useRef } from "react";
 
-type Particle = {
+const PARTICLE_COUNT = 110;
+const CONNECTION_DISTANCE = 150;
+
+type Bounds = {
+  width: number;
+  height: number;
+};
+
+class Dot {
   x: number;
   y: number;
   vx: number;
   vy: number;
   size: number;
-};
+  getBounds: () => Bounds;
 
-const PARTICLE_COUNT = 110;
-const CONNECTION_DISTANCE = 150;
+  constructor(getBounds: () => Bounds) {
+    const { width, height } = getBounds();
+    this.x = Math.random() * width;
+    this.y = Math.random() * height;
+    this.vx = (Math.random() - 0.5) * 0.3;
+    this.vy = (Math.random() - 0.5) * 0.3;
+    this.size = Math.random() * 2 + 1;
+    this.getBounds = getBounds;
+  }
+
+  update() {
+    const { width, height } = this.getBounds();
+    this.x += this.vx;
+    this.y += this.vy;
+
+    if (this.x < 0) this.x = width;
+    if (this.x > width) this.x = 0;
+    if (this.y < 0) this.y = height;
+    if (this.y > height) this.y = 0;
+  }
+
+  draw(ctx: CanvasRenderingContext2D) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(200, 220, 200, 0.7)";
+    ctx.fill();
+  }
+}
 
 export default function ConstellationBackground() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -25,7 +59,7 @@ export default function ConstellationBackground() {
     let width = 0;
     let height = 0;
     let animationId = 0;
-    let particles: Particle[] = [];
+    let particles: Dot[] = [];
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     const mouse = { x: -9999, y: -9999, radius: 140 };
@@ -41,43 +75,12 @@ export default function ConstellationBackground() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    class Dot {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      size: number;
-
-      constructor() {
-        this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.vx = (Math.random() - 0.5) * 0.3;
-        this.vy = (Math.random() - 0.5) * 0.3;
-        this.size = Math.random() * 2 + 1;
-      }
-
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        if (this.x < 0) this.x = width;
-        if (this.x > width) this.x = 0;
-        if (this.y < 0) this.y = height;
-        if (this.y > height) this.y = 0;
-      }
-
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(200, 220, 200, 0.7)";
-        ctx.fill();
-      }
-    }
+    const getBounds = () => ({ width, height });
 
     const init = () => {
       particles = [];
       for (let i = 0; i < PARTICLE_COUNT; i += 1) {
-        particles.push(new Dot());
+        particles.push(new Dot(getBounds));
       }
     };
 
@@ -105,7 +108,7 @@ export default function ConstellationBackground() {
       ctx.clearRect(0, 0, width, height);
       particles.forEach((p) => {
         p.update();
-        p.draw();
+        p.draw(ctx);
       });
       connect();
 
