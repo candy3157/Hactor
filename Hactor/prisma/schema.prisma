@@ -16,7 +16,6 @@ model Admin {
   updatedAt    DateTime       @updatedAt @map("updated_at")
 
   sessions     AdminSession[]
-  loginLogs    AdminLoginLog[]
 
   @@map("admins")
 }
@@ -32,20 +31,6 @@ model AdminSession {
   @@index([adminId])
   @@index([expiresAt])
   @@map("admin_sessions")
-}
-
-model AdminLoginLog {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  adminId   String   @db.Uuid @map("admin_id")
-  ip        String   @map("ip")
-  userAgent String?  @map("user_agent")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-  @@index([createdAt])
-  @@map("admin_login_logs")
 }
 
 model BotStatus {

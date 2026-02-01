@@ -58,21 +58,6 @@ export async function POST(request: Request) {
     },
   });
 
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const ip =
-    forwardedFor?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "unknown";
-  const userAgent = request.headers.get("user-agent");
-
-  await prisma.adminLoginLog.create({
-    data: {
-      adminId: admin.id,
-      ip,
-      userAgent,
-    },
-  });
-
   const response = NextResponse.json({ ok: true });
   response.cookies.set({
     name: SESSION_COOKIE,
