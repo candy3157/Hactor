@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 const sidebarItems = [
   { label: "콘솔 홈", href: "/admin/console" },
   { label: "User List", href: "/admin/console/users" },
+  { label: "Activities", href: "/admin/console/activities" },
 ];
 
 export default function AdminSidebar() {

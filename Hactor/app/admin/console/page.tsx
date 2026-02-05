@@ -1,4 +1,6 @@
-﻿import prisma from "@/lib/prisma";
+﻿// User Sync 로그
+
+import prisma from "@/lib/prisma";
 import AdminSidebar from "@/app/components/AdminSidebar";
 
 const formatDateTime = (value: Date) =>

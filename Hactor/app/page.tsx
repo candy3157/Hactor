@@ -1,19 +1,25 @@
 import Image from "next/image";
-import { Manrope, Orbitron } from "next/font/google";
+import localFont from "next/font/local";
 import ConstellationBackground from "./components/ConstellationBackground";
 import TypingText from "./components/TypingText";
 import { activityCatalog } from "./data/activities";
 
-const display = Orbitron({
-  subsets: ["latin"],
-  weight: ["400", "600"],
+const display = localFont({
+  src: [
+    { path: "./fonts/SF-Pro.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/SF-Pro-Italic.ttf", weight: "400", style: "italic" },
+  ],
   variable: "--font-display",
+  display: "swap",
 });
 
-const body = Manrope({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+const body = localFont({
+  src: [
+    { path: "./fonts/SF-Pro.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/SF-Pro-Italic.ttf", weight: "400", style: "italic" },
+  ],
   variable: "--font-body",
+  display: "swap",
 });
 
 const members = [
@@ -73,15 +79,15 @@ const activityTone: Record<string, string> = {
   강의: "border-amber-400/30 text-amber-200 bg-amber-400/10",
   행사: "border-rose-400/30 text-rose-200 bg-rose-400/10",
 };
-
-const statusTone: Record<string, string> = {
-  진행중: "border-emerald-400/30 text-emerald-200 bg-emerald-400/10",
-  예정: "border-white/10 text-white/60 bg-white/5",
-  완료: "border-white/10 text-white/50 bg-white/5",
+const activityDot: Record<string, string> = {
+  스터디: "bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.75)]",
+  프로젝트: "bg-violet-300 shadow-[0_0_10px_rgba(196,181,253,0.75)]",
+  강의: "bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.75)]",
+  행사: "bg-rose-300 shadow-[0_0_10px_rgba(251,113,133,0.75)]",
 };
 
-const formatTimelineDate = (date: string, status: string) => {
-  if (status === "진행중" || date.includes("매주")) {
+const formatTimelineDate = (date: string) => {
+  if (date.includes("매주")) {
     return ["NOW"];
   }
   const parts = date.split(" ");
@@ -247,9 +253,14 @@ export default function Home() {
                 {activityCatalog.current.map((activity) => (
                   <div key={activity.title} className="relative flex w-full gap-4">
                     <div className="flex w-[45px] flex-col items-center">
-                      <span className="mt-2 h-2.5 w-2.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.75)]" />
+                      <span
+                        className={`mt-2 h-2.5 w-2.5 rounded-full ${
+                          activityDot[activity.category] ??
+                          "bg-white/40 shadow-[0_0_8px_rgba(255,255,255,0.25)]"
+                        }`}
+                      />
                       <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.28em] text-white/35">
-                        {formatTimelineDate(activity.date, activity.status).map(
+                        {formatTimelineDate(activity.date).map(
                           (line) => (
                             <span
                               key={`${activity.title}-${line}`}
@@ -267,20 +278,12 @@ export default function Home() {
                           <p className="text-base font-semibold text-white">
                             {activity.title}
                           </p>
-                          <p className="mt-2 text-[12px] text-white/50">
-                            {activity.summary}
-                          </p>
                         </div>
                         <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
                           <span
                             className={`rounded-full border px-3 py-1 ${activityTone[activity.category] ?? "border-white/10 text-white/60 bg-white/5"}`}
                           >
                             {activity.category}
-                          </span>
-                          <span
-                            className={`rounded-full border px-3 py-1 ${statusTone[activity.status] ?? "border-white/10 text-white/60 bg-white/5"}`}
-                          >
-                            {activity.status}
                           </span>
                         </div>
                       </div>
@@ -301,39 +304,51 @@ export default function Home() {
                     {archive.items.length}개
                   </span>
                 </summary>
-                <div className="mt-4 space-y-3">
-                  {archive.items.map((activity) => (
-                    <div
-                      key={activity.title}
-                      className="rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.75)] p-4 text-white/80 transition-colors duration-300 hover:border-white/20 hover:bg-[rgba(26,26,36,0.9)] hover:text-white"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-white">
-                            {activity.title}
-                          </p>
-                          <p className="mt-1 text-[11px] text-white/50">
-                            <span className="font-semibold text-white/80">
-                              {activity.date}
-                            </span>{" "}
-                            · {activity.summary}
-                          </p>
+                <div className="relative mt-4 pl-12">
+                  <div className="absolute left-[22px] top-2 h-full w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent" />
+                  <div className="space-y-4">
+                    {archive.items.map((activity) => (
+                      <div
+                        key={activity.title}
+                        className="relative flex w-full gap-4"
+                      >
+                        <div className="flex w-[45px] flex-col items-center">
+                          <span
+                            className={`mt-2 h-2.5 w-2.5 rounded-full ${
+                              activityDot[activity.category] ??
+                              "bg-white/40 shadow-[0_0_8px_rgba(255,255,255,0.25)]"
+                            }`}
+                          />
+                          <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.28em] text-white/35">
+                            {formatTimelineDate(activity.date).map((line) => (
+                              <span
+                                key={`${archive.title}-${activity.title}-${line}`}
+                                className="block text-center leading-4"
+                              >
+                                {line}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
-                          <span
-                            className={`rounded-full border px-3 py-1 ${activityTone[activity.category] ?? "border-white/10 text-white/60 bg-white/5"}`}
-                          >
-                            {activity.category}
-                          </span>
-                          <span
-                            className={`rounded-full border px-3 py-1 ${statusTone[activity.status] ?? "border-white/10 text-white/60 bg-white/5"}`}
-                          >
-                            {activity.status}
-                          </span>
+                        <div className="flex-1 rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.75)] p-4 text-white/80 transition-colors duration-300 hover:border-white/20 hover:bg-[rgba(26,26,36,0.9)] hover:text-white">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-white">
+                                {activity.title}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em]">
+                              <span
+                                className={`rounded-full border px-3 py-1 ${activityTone[activity.category] ?? "border-white/10 text-white/60 bg-white/5"}`}
+                              >
+                                {activity.category}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </details>
             ))}

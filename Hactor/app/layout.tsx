@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -10,6 +11,15 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const sfPro = localFont({
+  src: [
+    { path: "./fonts/SF-Pro.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/SF-Pro-Italic.ttf", weight: "400", style: "italic" },
+  ],
+  variable: "--font-sf",
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -32,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${sfPro.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
       </body>
