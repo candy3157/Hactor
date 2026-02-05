@@ -1,8 +1,9 @@
-import Image from "next/image";
+﻿import Image from "next/image";
 import localFont from "next/font/local";
 import ConstellationBackground from "./components/ConstellationBackground";
 import TypingText from "./components/TypingText";
 import { activityCatalog } from "./data/activities";
+import { members } from "./data/members";
 
 const display = localFont({
   src: [
@@ -21,57 +22,6 @@ const body = localFont({
   variable: "--font-body",
   display: "swap",
 });
-
-const members = [
-  {
-    name: "Michel",
-    handle: "michel",
-    tags: [
-      { label: "Web", tone: "frost" },
-      { label: "Forensics", tone: "moss" },
-    ],
-  },
-  {
-    name: "Ox1de",
-    handle: "ox1de",
-    tags: [
-      { label: "Crypto", tone: "ember" },
-      { label: "Pwn", tone: "ruby" },
-    ],
-  },
-  {
-    name: "lime",
-    handle: "lime",
-    tags: [
-      { label: "Rev", tone: "slate" },
-      { label: "Infra", tone: "frost" },
-    ],
-  },
-  {
-    name: "wo0k",
-    handle: "wo0k",
-    tags: [
-      { label: "Pwn", tone: "ruby" },
-      { label: "Crypto", tone: "ember" },
-    ],
-  },
-  {
-    name: "ovic",
-    handle: "ovic",
-    tags: [
-      { label: "Web", tone: "frost" },
-      { label: "Dev", tone: "slate" },
-    ],
-  },
-  {
-    name: "ar0",
-    handle: "ar0",
-    tags: [
-      { label: "Reversing", tone: "moss" },
-      { label: "Forensics", tone: "frost" },
-    ],
-  },
-];
 
 const activityTone: Record<string, string> = {
   스터디: "border-emerald-400/30 text-emerald-200 bg-emerald-400/10",
@@ -251,7 +201,10 @@ export default function Home() {
               <div className="absolute left-[22px] top-2 h-full w-px bg-gradient-to-b from-white/20 via-white/10 to-transparent" />
               <div className="space-y-4">
                 {activityCatalog.current.map((activity) => (
-                  <div key={activity.title} className="relative flex w-full gap-4">
+                  <div
+                    key={activity.title}
+                    className="relative flex w-full gap-4"
+                  >
                     <div className="flex w-[45px] flex-col items-center">
                       <span
                         className={`mt-2 h-2.5 w-2.5 rounded-full ${
@@ -260,16 +213,14 @@ export default function Home() {
                         }`}
                       />
                       <div className="mt-3 font-mono text-[10px] uppercase tracking-[0.28em] text-white/35">
-                        {formatTimelineDate(activity.date).map(
-                          (line) => (
-                            <span
-                              key={`${activity.title}-${line}`}
-                              className="block text-center leading-4"
-                            >
-                              {line}
-                            </span>
-                          ),
-                        )}
+                        {formatTimelineDate(activity.date).map((line) => (
+                          <span
+                            key={`${activity.title}-${line}`}
+                            className="block text-center leading-4"
+                          >
+                            {line}
+                          </span>
+                        ))}
                       </div>
                     </div>
                     <div className="flex-1 rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.75)] p-5 text-white/80 transition-colors duration-300 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-white/20 hover:bg-[rgba(26,26,36,0.9)] hover:text-white">

@@ -21,13 +21,13 @@ export const activityCatalog: ActivityCatalog = {
     },
     {
       title: "신학기 오픈 모임",
-      date: "Mar 01",
+      date: "Mar 15",
       category: "행사",
     },
     {
-      title: "Spring 미니 프로젝트",
-      date: "Feb 15",
-      category: "프로젝트",
+      title: "대전대학교 개강",
+      date: "Mar 03",
+      category: "행사",
     },
   ],
   archives: [
