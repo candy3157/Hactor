@@ -1,37 +1,191 @@
-﻿import prisma from "@/lib/prisma";
-import AdminSidebar from "@/app/components/AdminSidebar";
+﻿"use client";
 
-const formatDate = (value: Date | null) => {
+import { useEffect, useMemo, useState } from "react";
+import AdminSidebar from "@/app/components/AdminSidebar";
+import DatePicker from "react-datepicker";
+import { ko } from "date-fns/locale";
+import "react-datepicker/dist/react-datepicker.css";
+
+type MemberField = {
+  fieldId: number;
+  label: string;
+};
+
+type Member = {
+  id: string;
+  discordId: string | null;
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
+  discordJoinedAt: string | null;
+  isActive: boolean;
+  fields: MemberField[];
+};
+
+type Field = {
+  id: number;
+  label: string;
+  code: string;
+};
+
+type MemberDraft = {
+  id: string;
+  displayName: string;
+  username: string;
+  isActive: boolean;
+  fieldIds: number[];
+};
+
+const emptyDraft: MemberDraft = {
+  id: "",
+  displayName: "",
+  username: "",
+  isActive: true,
+  fieldIds: [],
+};
+
+const formatDate = (value: string | null) => {
   if (!value) return "미정";
   return new Intl.DateTimeFormat("ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(value);
+  }).format(new Date(value));
 };
 
-export default async function AdminUsersPage() {
-  const [members, fields] = await Promise.all([
-    prisma.member.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        fields: {
-          include: {
-            field: true,
-          },
-        },
-      },
-    }),
-    prisma.activityField.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: "asc" },
-    }),
-  ]);
+export default function AdminUsersPage() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [fields, setFields] = useState<Field[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<MemberDraft>(emptyDraft);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [joinDate, setJoinDate] = useState<Date | null>(null);
 
-  const selectedMember = members[0] ?? null;
-  const selectedFieldIds = new Set(
-    selectedMember?.fields.map((entry) => entry.fieldId) ?? [],
+  const selectedMember = useMemo(
+    () => members.find((member) => member.id === selectedId) ?? null,
+    [members, selectedId],
   );
+
+  const isFormValid = useMemo(
+    () => draft.displayName.trim().length > 0,
+    [draft.displayName],
+  );
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await fetch("/api/admin/members");
+      const data = (await res.json()) as {
+        members: Member[];
+        fields: Field[];
+      };
+      setMembers(data.members ?? []);
+      setFields(data.fields ?? []);
+      if (data.members?.length) {
+        setSelectedId(data.members[0].id);
+      }
+    };
+    void load();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMember) {
+      return;
+    }
+    setDraft({
+      id: selectedMember.id,
+      displayName: selectedMember.displayName,
+      username: selectedMember.username ?? "",
+      isActive: selectedMember.isActive,
+      fieldIds: selectedMember.fields.map((entry) => entry.fieldId),
+    });
+    setJoinDate(
+      selectedMember.discordJoinedAt
+        ? new Date(selectedMember.discordJoinedAt)
+        : null,
+    );
+  }, [selectedMember]);
+
+  const toggleField = (fieldId: number) => {
+    setDraft((prev) => {
+      const exists = prev.fieldIds.includes(fieldId);
+      return {
+        ...prev,
+        fieldIds: exists
+          ? prev.fieldIds.filter((id) => id !== fieldId)
+          : [...prev.fieldIds, fieldId],
+      };
+    });
+  };
+
+  const handleSave = async () => {
+    if (!selectedId) {
+      return;
+    }
+    if (!isFormValid) {
+      setMessage("표시 이름을 입력하세요.");
+      return;
+    }
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/members/${selectedId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: draft.displayName,
+          username: draft.username,
+          isActive: draft.isActive,
+          fieldIds: draft.fieldIds,
+          discordJoinedAt: joinDate ? joinDate.toISOString() : null,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("저장에 실패했습니다.");
+      }
+      const data = (await res.json()) as { member: Member };
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.id === data.member.id ? data.member : member,
+        ),
+      );
+      setMessage("저장 완료");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "저장 실패");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedId) {
+      return;
+    }
+    const confirmed = window.confirm("정말로 이 멤버를 삭제할까요?");
+    if (!confirmed) {
+      return;
+    }
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/members/${selectedId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        throw new Error("삭제에 실패했습니다.");
+      }
+      setMembers((prev) => {
+        const remaining = prev.filter((member) => member.id !== selectedId);
+        setSelectedId(remaining[0]?.id ?? null);
+        return remaining;
+      });
+      setMessage("삭제 완료");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "삭제 실패");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0f1210] text-white">
@@ -48,13 +202,13 @@ export default async function AdminUsersPage() {
                 멤버 관리
               </h1>
               <p className="mt-2 text-sm text-white/60">
-                멤버 목록 확인 및 개별 데이터 편집을 준비합니다.
+                멤버 목록 확인 및 개별 데이터 편집을 진행합니다.
               </p>
             </div>
           </header>
 
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-            <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
+            <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)] lg:max-h-[72vh] lg:overflow-y-auto">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                   Members
@@ -67,11 +221,17 @@ export default async function AdminUsersPage() {
                   아직 등록된 멤버가 없습니다.
                 </div>
               ) : (
-                <div className="mt-6 space-y-4">
+                <div className="mt-6 space-y-4 pb-2">
                   {members.map((member) => (
-                    <div
+                    <button
                       key={member.id}
-                      className="rounded-2xl border border-white/10 bg-[rgba(18,18,22,0.7)] px-5 py-4"
+                      type="button"
+                      onClick={() => setSelectedId(member.id)}
+                      className={`w-full rounded-2xl border px-5 py-4 text-left transition ${
+                        member.id === selectedId
+                          ? "border-white/30 bg-white/10"
+                          : "border-white/10 bg-[rgba(18,18,22,0.7)] hover:border-white/25 hover:bg-white/10"
+                      }`}
                     >
                       <div className="flex flex-wrap items-center gap-3">
                         <p className="text-sm font-semibold text-white">
@@ -102,12 +262,12 @@ export default async function AdminUsersPage() {
                               key={`${member.id}-${entry.fieldId}`}
                               className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/70"
                             >
-                              {entry.field.label}
+                              {entry.label}
                             </span>
                           ))
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
@@ -118,7 +278,9 @@ export default async function AdminUsersPage() {
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                   Edit Member
                 </p>
-                <span className="text-[11px] text-white/40">준비 중</span>
+                <span className="text-[11px] text-white/40">
+                  {selectedMember ? "수정" : "대기"}
+                </span>
               </div>
 
               {selectedMember ? (
@@ -129,9 +291,14 @@ export default async function AdminUsersPage() {
                     </span>
                     <input
                       type="text"
-                      defaultValue={selectedMember.displayName}
-                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80"
-                      disabled
+                      value={draft.displayName}
+                      onChange={(event) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          displayName: event.target.value,
+                        }))
+                      }
+                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
                     />
                   </label>
 
@@ -141,10 +308,37 @@ export default async function AdminUsersPage() {
                     </span>
                     <input
                       type="text"
-                      defaultValue={selectedMember.username ?? ""}
-                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80"
-                      disabled
+                      value={draft.username}
+                      onChange={(event) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          username: event.target.value,
+                        }))
+                      }
+                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
                     />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                      활성화
+                    </span>
+                    <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={draft.isActive}
+                        onChange={(event) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            isActive: event.target.checked,
+                          }))
+                        }
+                        className="h-4 w-4"
+                      />
+                      <span className="text-[11px] uppercase tracking-[0.2em] text-white/70">
+                        활성 멤버
+                      </span>
+                    </div>
                   </label>
 
                   <label className="block">
@@ -152,20 +346,26 @@ export default async function AdminUsersPage() {
                       활동 분야
                     </span>
                     <div className="mt-3 grid gap-2">
-                      {fields.map((field) => (
-                        <label
-                          key={field.id}
-                          className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-white/70"
-                        >
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4"
-                            defaultChecked={selectedFieldIds.has(field.id)}
-                            disabled
-                          />
-                          <span>{field.label}</span>
-                        </label>
-                      ))}
+                      {fields.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-3 text-center text-[11px] text-white/50">
+                          등록된 활동 분야가 없습니다.
+                        </div>
+                      ) : (
+                        fields.map((field) => (
+                          <label
+                            key={field.id}
+                            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-white/70"
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={draft.fieldIds.includes(field.id)}
+                              onChange={() => toggleField(field.id)}
+                            />
+                            <span>{field.label}</span>
+                          </label>
+                        ))
+                      )}
                     </div>
                   </label>
 
@@ -173,21 +373,51 @@ export default async function AdminUsersPage() {
                     <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
                       가입일
                     </span>
-                    <input
-                      type="text"
-                      defaultValue={formatDate(selectedMember.discordJoinedAt)}
-                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80"
-                      disabled
-                    />
+                    <div className="mt-2">
+                      <DatePicker
+                        selected={joinDate}
+                        onChange={(date) => setJoinDate(date)}
+                        locale={ko}
+                        dateFormat="yyyy년 MM월 dd일"
+                        showYearDropdown
+                        showMonthDropdown
+                        dropdownMode="select"
+                        maxDate={new Date()}
+                        placeholderText="날짜를 선택하세요"
+                        className="h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
+                      />
+                    </div>
+                    {joinDate && (
+                      <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-white/40">
+                        현재 가입일: {formatDate(joinDate.toISOString())}
+                      </p>
+                    )}
                   </label>
 
-                  <button
-                    type="button"
-                    className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-white/15 bg-white/5 text-xs uppercase tracking-[0.28em] text-white/50"
-                    disabled
-                  >
-                    저장 (준비 중)
-                  </button>
+                  {message && (
+                    <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] text-white/60">
+                      {message}
+                    </p>
+                  )}
+
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSave}
+                      disabled={isLoading || !isFormValid}
+                      className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-white/15 bg-white/5 text-xs uppercase tracking-[0.28em] text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      저장
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={isLoading}
+                      className="inline-flex h-11 flex-1 items-center justify-center rounded-full border border-rose-400/30 bg-rose-500/10 text-xs uppercase tracking-[0.28em] text-rose-100/80 transition hover:border-rose-300/60 hover:bg-rose-500/20 hover:text-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      삭제
+                    </button>
+                  </div>
                 </form>
               ) : (
                 <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-sm text-white/50">
@@ -198,6 +428,61 @@ export default async function AdminUsersPage() {
           </div>
         </main>
       </div>
+      <style jsx global>{`
+        .react-datepicker-wrapper {
+          width: 100%;
+        }
+        .react-datepicker__input-container input {
+          width: 100%;
+        }
+        .react-datepicker {
+          background: #0f1210;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 16px;
+          box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+          color: #f5f7f5;
+        }
+        .react-datepicker__header {
+          background: #141a16;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .react-datepicker__current-month,
+        .react-datepicker__day-name {
+          color: #f5f7f5;
+        }
+        .react-datepicker__day {
+          color: rgba(255, 255, 255, 0.8);
+        }
+        .react-datepicker__day:hover {
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+        }
+        .react-datepicker__day--selected,
+        .react-datepicker__day--keyboard-selected {
+          background: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+        }
+        .react-datepicker__day--today {
+          font-weight: 700;
+          color: #9ae6b4;
+        }
+        .react-datepicker__triangle {
+          display: none;
+        }
+        .react-datepicker__year-dropdown,
+        .react-datepicker__month-dropdown {
+          background: #0f1210;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 12px;
+        }
+        .react-datepicker__year-option:hover,
+        .react-datepicker__month-option:hover {
+          background: rgba(255, 255, 255, 0.08);
+        }
+        .react-datepicker__navigation-icon::before {
+          border-color: rgba(255, 255, 255, 0.7);
+        }
+      `}</style>
     </div>
   );
 }

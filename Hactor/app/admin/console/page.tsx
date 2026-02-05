@@ -14,17 +14,17 @@ const formatDateTime = (value: Date) =>
   }).format(value);
 
 export default async function AdminConsolePage() {
-  const botStatus = await prisma.botStatus.findFirst({
-    orderBy: { updatedAt: "desc" },
-  });
+  const [latest, totalCount] = await Promise.all([
+    prisma.member.aggregate({
+      _max: { updatedAt: true },
+    }),
+    prisma.member.count(),
+  ]);
 
-  const lastSyncLabel = botStatus?.lastUserlistSyncAt
-    ? formatDateTime(botStatus.lastUserlistSyncAt)
+  const lastSyncLabel = latest._max.updatedAt
+    ? formatDateTime(latest._max.updatedAt)
     : "없음";
-  const lastSyncCount =
-    typeof botStatus?.lastUserlistCount === "number"
-      ? `${botStatus.lastUserlistCount}명`
-      : "미정";
+  const lastSyncCount = `${totalCount}명`;
 
   return (
     <div className="min-h-screen bg-[#0f1210] text-white">

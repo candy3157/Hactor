@@ -33,15 +33,6 @@ model AdminSession {
   @@map("admin_sessions")
 }
 
-model BotStatus {
-  id                 Int      @id @default(autoincrement())
-  lastUserlistSyncAt DateTime? @map("last_userlist_sync_at")
-  lastUserlistCount  Int?      @map("last_userlist_count")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-
-  @@map("bot_status")
-}
-
 model Activity {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title     String
