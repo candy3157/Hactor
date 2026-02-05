@@ -28,6 +28,13 @@ export default function AdminActivitiesPage() {
     () => activities.find((item) => item.id === selectedId) ?? null,
     [activities, selectedId],
   );
+  const isFormValid = useMemo(() => {
+    return (
+      draft.title.trim().length > 0 &&
+      draft.dateLabel.trim().length > 0 &&
+      draft.category.trim().length > 0
+    );
+  }, [draft]);
 
   useEffect(() => {
     const load = async () => {
@@ -65,7 +72,9 @@ export default function AdminActivitiesPage() {
       }
       const data = (await res.json()) as { activity: Activity };
       setActivities((prev) =>
-        prev.map((item) => (item.id === data.activity.id ? data.activity : item)),
+        prev.map((item) =>
+          item.id === data.activity.id ? data.activity : item,
+        ),
       );
       setMessage("저장 완료");
     } catch (err) {
@@ -122,7 +131,7 @@ export default function AdminActivitiesPage() {
                 활동 관리
               </h1>
               <p className="mt-2 text-sm text-white/60">
-                활동 데이터 추가 및 수정을 진행합니다.
+                활동 데이터를 추가 및 수정할 수 있습니다.
               </p>
             </div>
             <button
@@ -194,9 +203,12 @@ export default function AdminActivitiesPage() {
                     type="text"
                     value={draft.title}
                     onChange={(event) =>
-                      setDraft((prev) => ({ ...prev, title: event.target.value }))
+                      setDraft((prev) => ({
+                        ...prev,
+                        title: event.target.value,
+                      }))
                     }
-                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80"
+                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
                   />
                 </label>
 
@@ -204,6 +216,9 @@ export default function AdminActivitiesPage() {
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
                     Date Label
                   </span>
+                  <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-white/40">
+                    ex) MAR 01
+                  </p>
                   <input
                     type="text"
                     value={draft.dateLabel}
@@ -213,7 +228,7 @@ export default function AdminActivitiesPage() {
                         dateLabel: event.target.value,
                       }))
                     }
-                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80"
+                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
                   />
                 </label>
 
@@ -229,27 +244,42 @@ export default function AdminActivitiesPage() {
                         category: event.target.value,
                       }))
                     }
-                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-white/5 px-4 text-sm text-white/80"
+                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
                   >
-                    <option value="스터디">스터디</option>
-                    <option value="프로젝트">프로젝트</option>
-                    <option value="강의">강의</option>
-                    <option value="행사">행사</option>
+                    <option className="bg-[#0f1210] text-white" value="스터디">
+                      스터디
+                    </option>
+                    <option
+                      className="bg-[#0f1210] text-white"
+                      value="프로젝트"
+                    >
+                      프로젝트
+                    </option>
+                    <option className="bg-[#0f1210] text-white" value="강의">
+                      강의
+                    </option>
+                    <option className="bg-[#0f1210] text-white" value="행사">
+                      행사
+                    </option>
                   </select>
                 </label>
-
 
                 {message && (
                   <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] text-white/60">
                     {message}
                   </p>
                 )}
+                {!isFormValid && (
+                  <p className="rounded-2xl border border-amber-300/20 bg-amber-200/10 px-4 py-2 text-[11px] text-amber-100/80">
+                    모든 항목을 입력해야 추가/저장할 수 있습니다.
+                  </p>
+                )}
 
                 <button
                   type="button"
                   onClick={selectedId ? handleSave : handleCreate}
-                  disabled={isLoading}
-                  className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-white/15 bg-white/5 text-xs uppercase tracking-[0.28em] text-white/60 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isLoading || !isFormValid}
+                  className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-white/15 bg-white/5 text-xs uppercase tracking-[0.28em] text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {selectedId ? "저장" : "추가"}
                 </button>
