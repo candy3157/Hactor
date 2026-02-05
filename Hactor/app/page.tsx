@@ -129,7 +129,7 @@ export default function Home() {
             </div>
 
             <div className="group relative overflow-hidden py-2 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
-              <div className="flex w-max flex-nowrap gap-4 will-change-transform animate-[ruby-marquee_18s_linear_infinite] group-hover:[animation-play-state:paused]">
+              <div className="flex w-max flex-nowrap gap-4 will-change-transform animate-[ruby-marquee_30s_linear_infinite] group-hover:[animation-play-state:paused]">
                 {marqueeCopies.map((copyIndex) => (
                   <div
                     key={`marquee-copy-${copyIndex}`}
