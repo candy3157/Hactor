@@ -1,4 +1,5 @@
 ﻿import Image from "next/image";
+import Link from "next/link";
 import localFont from "next/font/local";
 import ConstellationBackground from "./components/ConstellationBackground";
 import TypingText from "./components/TypingText";
@@ -171,9 +172,12 @@ export default function Home() {
             </div>
 
             <div className="flex justify-center">
-              <button className="inline-flex items-center justify-center rounded-full border border-white/20 bg-[rgba(255,255,255,0.02)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/60 transition-colors duration-200 hover:border-white/30 hover:text-white/85">
+              <Link
+                className="inline-flex items-center justify-center rounded-full border border-white/20 bg-[rgba(255,255,255,0.02)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/60 transition-colors duration-200 hover:border-white/30 hover:text-white/85"
+                href="/members"
+              >
                 See more
-              </button>
+              </Link>
             </div>
           </section>
 

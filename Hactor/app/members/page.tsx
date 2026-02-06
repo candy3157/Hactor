@@ -28,24 +28,48 @@ export default async function MembersPage() {
   const members = await prisma.member.findMany({
     where: { isActive: true },
     orderBy: { displayName: "asc" },
-    include: {
+    select: {
+      id: true,
+      displayName: true,
+      username: true,
+      discordId: true,
+      avatarUrl: true,
+      isActive: true,
       fields: {
-        include: {
-          field: true,
+        orderBy: { assignedAt: "asc" },
+        select: {
+          fieldId: true,
+          assignedAt: true,
+          field: {
+            select: {
+              code: true,
+              label: true,
+              isActive: true,
+            },
+          },
         },
       },
     },
   });
 
   const memberRows = members.map((member) => {
-    const tags = member.fields
-      .map((entry) => entry.field)
-      .filter((field) => field?.isActive)
-      .map((field) => field.label);
+    const activeFields = member.fields.filter((entry) => entry.field?.isActive);
+    const tags = activeFields.map((entry) => entry.field.label);
 
     return {
+      id: member.id,
       name: member.displayName,
       handle: member.username ?? member.discordId?.toString() ?? "unknown",
+      username: member.username,
+      displayName: member.displayName,
+      avatarUrl: member.avatarUrl,
+      isActive: member.isActive,
+      memberActivityFields: member.fields.map((entry) => ({
+        fieldId: entry.fieldId,
+        code: entry.field.code,
+        label: entry.field.label,
+        assignedAt: entry.assignedAt.toISOString(),
+      })),
       tags,
     };
   });
@@ -65,8 +89,8 @@ export default async function MembersPage() {
               <h1 className="mt-3 font-[var(--font-sf)] text-4xl uppercase tracking-[0.2em] text-white sm:text-5xl">
                 Members
               </h1>
-              <p className="mt-2 text-xs text-white/50">
-                Current active players in the team.
+              <p className="mt-2 text-s text-white/50">
+                Explore the user database via the terminal
               </p>
             </div>
 
