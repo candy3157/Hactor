@@ -6,12 +6,13 @@ export const runtime = "nodejs";
 type ActivityPayload = {
   title?: string;
   dateLabel?: string;
+  year?: number;
   category?: string;
 };
 
 export async function GET() {
   const activities = await prisma.activity.findMany({
-    orderBy: [{ createdAt: "desc" }],
+    orderBy: [{ year: "desc" }, { createdAt: "desc" }],
   });
 
   return NextResponse.json({ ok: true, activities });
@@ -27,10 +28,10 @@ export async function POST(request: Request) {
   }
 
   if (
-    !payload?.title ||
-    !payload?.dateLabel ||
-    !payload?.category ||
-    !payload?.category
+    !payload?.title?.trim() ||
+    !payload?.dateLabel?.trim() ||
+    !payload?.category?.trim() ||
+    !Number.isInteger(payload?.year)
   ) {
     return NextResponse.json(
       { ok: false, message: "Missing required fields" },
@@ -38,11 +39,21 @@ export async function POST(request: Request) {
     );
   }
 
+  if (payload.year! < 1900 || payload.year! > 2100) {
+    return NextResponse.json(
+      { ok: false, message: "Invalid year range" },
+      { status: 400 },
+    );
+  }
+
+  const year = payload.year;
+
   const created = await prisma.activity.create({
     data: {
-      title: payload.title,
-      dateLabel: payload.dateLabel,
-      category: payload.category,
+      title: payload.title.trim(),
+      dateLabel: payload.dateLabel.trim(),
+      year,
+      category: payload.category.trim(),
     },
   });
 

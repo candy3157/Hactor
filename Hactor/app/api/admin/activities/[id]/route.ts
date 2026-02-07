@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 type ActivityPayload = {
   title?: string;
   dateLabel?: string;
+  year?: number;
   category?: string;
 };
 
@@ -36,12 +37,49 @@ export async function PATCH(
     );
   }
 
+  if (payload.title !== undefined && payload.title.trim().length === 0) {
+    return NextResponse.json(
+      { ok: false, message: "Title cannot be empty" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    payload.dateLabel !== undefined &&
+    payload.dateLabel.trim().length === 0
+  ) {
+    return NextResponse.json(
+      { ok: false, message: "Date label cannot be empty" },
+      { status: 400 },
+    );
+  }
+
+  if (payload.category !== undefined && payload.category.trim().length === 0) {
+    return NextResponse.json(
+      { ok: false, message: "Category cannot be empty" },
+      { status: 400 },
+    );
+  }
+
+  if (
+    payload.year !== undefined &&
+    (!Number.isInteger(payload.year) ||
+      payload.year < 1900 ||
+      payload.year > 2100)
+  ) {
+    return NextResponse.json(
+      { ok: false, message: "Invalid year range" },
+      { status: 400 },
+    );
+  }
+
   const updated = await prisma.activity.update({
     where: { id },
     data: {
-      title: payload.title,
-      dateLabel: payload.dateLabel,
-      category: payload.category,
+      title: payload.title?.trim(),
+      dateLabel: payload.dateLabel?.trim(),
+      year: payload.year,
+      category: payload.category?.trim(),
     },
   });
 

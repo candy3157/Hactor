@@ -176,7 +176,7 @@ export default function Home() {
                 className="inline-flex items-center justify-center rounded-full border border-white/20 bg-[rgba(255,255,255,0.02)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/60 transition-colors duration-200 hover:border-white/30 hover:text-white/85"
                 href="/members"
               >
-                See more
+                더보기
               </Link>
             </div>
           </section>
@@ -196,9 +196,12 @@ export default function Home() {
                   우리가 진행한 주요 활동을 확인하세요.
                 </p>
               </div>
-              <button className="text-[10px] uppercase tracking-[0.28em] text-white/45 transition-colors hover:text-white/80">
+              <Link
+                className="text-[10px] uppercase tracking-[0.28em] text-white/45 transition-colors hover:text-white/80"
+                href="/activities"
+              >
                 모든 활동 보기 →
-              </button>
+              </Link>
             </div>
 
             <div className="relative pl-12">

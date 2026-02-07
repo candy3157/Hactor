@@ -7,6 +7,7 @@ type Activity = {
   id: string;
   title: string;
   dateLabel: string;
+  year: number;
   category: string;
 };
 
@@ -14,7 +15,8 @@ const emptyDraft: Activity = {
   id: "",
   title: "",
   dateLabel: "",
-  category: "스터디",
+  year: new Date().getFullYear(),
+  category: "",
 };
 
 export default function AdminActivitiesPage() {
@@ -28,23 +30,38 @@ export default function AdminActivitiesPage() {
     () => activities.find((item) => item.id === selectedId) ?? null,
     [activities, selectedId],
   );
-  const isFormValid = useMemo(() => {
-    return (
+
+  const isFormValid = useMemo(
+    () =>
       draft.title.trim().length > 0 &&
       draft.dateLabel.trim().length > 0 &&
-      draft.category.trim().length > 0
-    );
-  }, [draft]);
+      Number.isInteger(draft.year) &&
+      draft.year >= 1900 &&
+      draft.year <= 2100 &&
+      draft.category.trim().length > 0,
+    [draft],
+  );
 
   useEffect(() => {
     const load = async () => {
-      const res = await fetch("/api/admin/activities");
-      const data = (await res.json()) as { activities: Activity[] };
-      setActivities(data.activities ?? []);
-      if (data.activities?.length) {
-        setSelectedId(data.activities[0].id);
+      try {
+        const res = await fetch("/api/admin/activities");
+        if (!res.ok) {
+          throw new Error("활동 목록을 불러오지 못했습니다.");
+        }
+        const data = (await res.json()) as { activities: Activity[] };
+        const next = data.activities ?? [];
+        setActivities(next);
+        if (next.length > 0) {
+          setSelectedId(next[0].id);
+        }
+      } catch (error) {
+        setMessage(
+          error instanceof Error ? error.message : "불러오기에 실패했습니다.",
+        );
       }
     };
+
     void load();
   }, []);
 
@@ -64,11 +81,12 @@ export default function AdminActivitiesPage() {
         body: JSON.stringify({
           title: draft.title,
           dateLabel: draft.dateLabel,
+          year: draft.year,
           category: draft.category,
         }),
       });
       if (!res.ok) {
-        throw new Error("저장에 실패했습니다.");
+        throw new Error("활동 저장에 실패했습니다.");
       }
       const data = (await res.json()) as { activity: Activity };
       setActivities((prev) =>
@@ -77,8 +95,8 @@ export default function AdminActivitiesPage() {
         ),
       );
       setMessage("저장 완료");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "저장 실패");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "저장 실패");
     } finally {
       setIsLoading(false);
     }
@@ -94,18 +112,19 @@ export default function AdminActivitiesPage() {
         body: JSON.stringify({
           title: draft.title,
           dateLabel: draft.dateLabel,
+          year: draft.year,
           category: draft.category,
         }),
       });
       if (!res.ok) {
-        throw new Error("추가에 실패했습니다.");
+        throw new Error("활동 생성에 실패했습니다.");
       }
       const data = (await res.json()) as { activity: Activity };
       setActivities((prev) => [data.activity, ...prev]);
       setSelectedId(data.activity.id);
-      setMessage("추가 완료");
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : "추가 실패");
+      setMessage("생성 완료");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "생성 실패");
     } finally {
       setIsLoading(false);
     }
@@ -113,7 +132,11 @@ export default function AdminActivitiesPage() {
 
   const handleNew = () => {
     setSelectedId(null);
-    setDraft(emptyDraft);
+    setDraft({
+      ...emptyDraft,
+      year: new Date().getFullYear(),
+    });
+    setMessage(null);
   };
 
   return (
@@ -125,13 +148,13 @@ export default function AdminActivitiesPage() {
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-white/50">
-                Activities
+                활동
               </p>
               <h1 className="mt-2 font-[var(--font-display)] text-2xl uppercase tracking-[0.18em] text-white">
                 활동 관리
               </h1>
               <p className="mt-2 text-sm text-white/60">
-                활동 데이터를 추가 및 수정할 수 있습니다.
+                activities 페이지에서 사용할 활동을 생성/수정합니다.
               </p>
             </div>
             <button
@@ -147,7 +170,7 @@ export default function AdminActivitiesPage() {
             <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
-                  Activities
+                  활동
                 </p>
                 <span className="text-sm text-white/70">
                   {activities.length}개
@@ -172,7 +195,7 @@ export default function AdminActivitiesPage() {
                           {activity.title}
                         </p>
                         <p className="mt-1 text-[11px] text-white/50">
-                          {activity.dateLabel}
+                          {activity.dateLabel} / {activity.year}
                         </p>
                       </div>
                       <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
@@ -187,7 +210,7 @@ export default function AdminActivitiesPage() {
             <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
-                  Edit
+                  편집
                 </p>
                 <span className="text-[11px] text-white/40">
                   {selectedId ? "수정" : "추가"}
@@ -197,7 +220,7 @@ export default function AdminActivitiesPage() {
               <form className="mt-6 space-y-4">
                 <label className="block">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    Title
+                    제목
                   </span>
                   <input
                     type="text"
@@ -214,7 +237,7 @@ export default function AdminActivitiesPage() {
 
                 <label className="block">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    Date Label
+                    날짜 라벨
                   </span>
                   <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-white/40">
                     ex) MAR 01
@@ -234,9 +257,29 @@ export default function AdminActivitiesPage() {
 
                 <label className="block">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    Category
+                    연도
                   </span>
-                  <select
+                  <input
+                    type="number"
+                    min={1900}
+                    max={2100}
+                    value={draft.year}
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        year: Number.parseInt(event.target.value, 10) || 0,
+                      }))
+                    }
+                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                    카테고리
+                  </span>
+                  <input
+                    type="text"
                     value={draft.category}
                     onChange={(event) =>
                       setDraft((prev) => ({
@@ -245,23 +288,7 @@ export default function AdminActivitiesPage() {
                       }))
                     }
                     className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
-                  >
-                    <option className="bg-[#0f1210] text-white" value="스터디">
-                      스터디
-                    </option>
-                    <option
-                      className="bg-[#0f1210] text-white"
-                      value="프로젝트"
-                    >
-                      프로젝트
-                    </option>
-                    <option className="bg-[#0f1210] text-white" value="강의">
-                      강의
-                    </option>
-                    <option className="bg-[#0f1210] text-white" value="행사">
-                      행사
-                    </option>
-                  </select>
+                  />
                 </label>
 
                 {message && (
@@ -271,7 +298,7 @@ export default function AdminActivitiesPage() {
                 )}
                 {!isFormValid && (
                   <p className="rounded-2xl border border-amber-300/20 bg-amber-200/10 px-4 py-2 text-[11px] text-amber-100/80">
-                    모든 항목을 입력해야 추가/저장할 수 있습니다.
+                    모든 항목을 입력하고 연도는 1900~2100 사이여야 합니다.
                   </p>
                 )}
 
