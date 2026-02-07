@@ -40,14 +40,14 @@ export default async function AdminConsolePage() {
             </div>
           </header>
 
-          <div className="mt-6 flex gap-6 overflow-x-auto pb-2">
-            <section className="min-w-[320px] flex-1 rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-6">
+            <section className="w-full max-w-[560px] rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                   Bot Sent Log
                 </p>
-                <div className="text-right">
-                  <span className="block text-sm text-white/70">
+                <div className="text-left sm:text-right">
+                  <span className="block text-sm leading-6 text-white/70">
                     {lastSyncLabel}
                   </span>
                   <span className="block text-[11px] text-white/45">

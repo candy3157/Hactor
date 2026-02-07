@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type MemberActivityFieldRow = {
   fieldId: number;
@@ -45,6 +45,7 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(
     members[0]?.id ?? null,
   );
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const filteredMembers = useMemo(
     () => filterMembers(members, query),
@@ -63,6 +64,33 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
 
   const commandTarget =
     selectedMember?.username ?? selectedMember?.handle ?? "unknown";
+
+  useEffect(() => {
+    if (!isDetailOpen) {
+      return;
+    }
+
+    const closeDetail = () => {
+      setIsDetailOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault();
+      closeDetail();
+    };
+
+    const handleTouchStart = () => {
+      closeDetail();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("touchstart", handleTouchStart);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("touchstart", handleTouchStart);
+    };
+  }, [isDetailOpen]);
 
   return (
     <div className="relative min-h-[520px] overflow-hidden rounded-2xl border border-white/10 p-6 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)]">
@@ -88,6 +116,7 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   aria-label="Filter members"
+                  disabled={isDetailOpen}
                   className="absolute inset-0 h-full w-full opacity-0 caret-transparent"
                 />
               </span>
@@ -112,116 +141,131 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
           </div>
         </div>
 
-        <div className="mt-4 flex-1 space-y-1 overflow-y-auto pr-1 font-mono text-[13px]">
-          {filteredMembers.map((member, index) => {
-            const tagLabel = member.tags.length ? member.tags.join(", ") : "-";
-            const isSelected = member.id === selectedMember?.id;
+        <div className="mt-4 flex-1 overflow-y-auto pr-1">
+          {isDetailOpen ? (
+            <div className="mt-4 min-h-[220px] border-t border-white/10 pt-3 font-mono text-[11px]">
+              {selectedMember ? (
+                <>
+                  <div>
+                    <span className="font-semibold text-[#ff3e3e]">
+                      kali@kali
+                    </span>
+                    <span className="text-white">:</span>
+                    <span className="font-semibold text-[#4a9eff]">~</span>
+                    <span className="text-[#4a9eff]">$ </span>
+                    <span className="text-white">
+                      hactor members --show {commandTarget}
+                    </span>
+                  </div>
 
-            return (
-              <button
-                key={member.id}
-                type="button"
-                onClick={() => setSelectedMemberId(member.id)}
-                className={`grid w-full grid-cols-[auto_44px_minmax(140px,1fr)_minmax(160px,1fr)_minmax(180px,2fr)] items-center gap-x-3 border-l-2 px-2 py-1 text-left transition-colors duration-200 ${
-                  isSelected
-                    ? "border-[#4a9eff] bg-[rgba(74,158,255,0.12)]"
-                    : "border-transparent hover:border-[#4a9eff] hover:bg-[rgba(74,158,255,0.08)]"
-                }`}
-              >
-                <span className="text-[#4a9eff]">&nbsp;</span>
-                <span className="text-white/40">
-                  [{String(index + 1).padStart(2, "0")}]
-                </span>
-                <span className="min-w-0 truncate font-semibold text-white">
-                  {member.name}
-                </span>
-                <span className="min-w-0 truncate text-[rgba(56,189,248,0.8)]">
-                  @{member.handle}
-                </span>
-                <span
-                  className={
-                    tagLabel === "-"
-                      ? "min-w-0 truncate italic text-white/30"
-                      : "min-w-0 truncate text-[rgba(251,191,36,0.9)]"
-                  }
-                >
-                  {tagLabel}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-4 min-h-[220px] border-t border-white/10 pt-3 font-mono text-[11px]">
-          {selectedMember ? (
-            <>
-              <div>
-                <span className="font-semibold text-[#ff3e3e]">kali@kali</span>
-                <span className="text-white">:</span>
-                <span className="font-semibold text-[#4a9eff]">~</span>
-                <span className="text-[#4a9eff]">$ </span>
-                <span className="text-white">
-                  hactor members --show {commandTarget}
-                </span>
-              </div>
-
-              <div className="mt-3 rounded-lg border border-[rgba(74,158,255,0.24)] bg-[rgba(6,14,25,0.65)] p-3">
-                <div className="grid grid-cols-[140px_1fr] items-start gap-y-3">
-                  <span className="text-white/45">Name</span>
-                  <span className="text-white">
-                    {selectedMember.displayName}
-                  </span>
-
-                  <span className="text-white/45">avatar</span>
-                  <span>
-                    {selectedMember.avatarUrl ? (
-                      <span className="inline-flex items-center gap-3">
-                        <span className="relative h-12 w-12 overflow-hidden rounded-md border border-white/15 bg-white/5">
-                          <Image
-                            src={selectedMember.avatarUrl}
-                            alt={`${selectedMember.displayName} avatar`}
-                            fill
-                            sizes="48px"
-                            className="object-cover"
-                          />
-                        </span>
+                  <div className="mt-3 rounded-lg border border-[rgba(74,158,255,0.24)] bg-[rgba(6,14,25,0.65)] p-3">
+                    <div className="grid grid-cols-[140px_1fr] items-start gap-y-3">
+                      <span className="text-white/45">Name</span>
+                      <span className="text-white">
+                        {selectedMember.displayName}
                       </span>
-                    ) : (
-                      <span className="italic text-white/35">null</span>
-                    )}
-                  </span>
 
-                  <span className="text-white/45">is_active</span>
-                  <span
-                    className={
-                      selectedMember.isActive
-                        ? "text-emerald-300"
-                        : "text-rose-300"
-                    }
-                  >
-                    {String(selectedMember.isActive)}
-                  </span>
+                      <span className="text-white/45">Avatar</span>
+                      <span>
+                        {selectedMember.avatarUrl ? (
+                          <span className="inline-flex items-center gap-3">
+                            <span className="relative h-12 w-12 overflow-hidden rounded-md border border-white/15 bg-white/5">
+                              <Image
+                                src={selectedMember.avatarUrl}
+                                alt={`${selectedMember.displayName} avatar`}
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                              />
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="italic text-white/35">null</span>
+                        )}
+                      </span>
 
-                  <span className="text-white/45">activity_fields</span>
-                  <span className="space-y-1">
-                    {selectedMember.memberActivityFields.length ? (
-                      selectedMember.memberActivityFields.map((field) => (
-                        <span
-                          key={`${selectedMember.id}-${field.fieldId}`}
-                          className="block text-white/80"
-                        >
-                          {`{ field_id: ${field.fieldId}, code: "${field.code}", label: "${field.label}", assigned_at: "${field.assignedAt}" }`}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="italic text-white/35">null</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            </>
+                      <span className="text-white/45">is_active</span>
+                      <span
+                        className={
+                          selectedMember.isActive
+                            ? "text-emerald-300"
+                            : "text-rose-300"
+                        }
+                      >
+                        {String(selectedMember.isActive)}
+                      </span>
+
+                      <span className="text-white/45">Activity_fields</span>
+                      <span className="space-y-1">
+                        {selectedMember.memberActivityFields.length ? (
+                          selectedMember.memberActivityFields.map((field) => (
+                            <span
+                              key={`${selectedMember.id}-${field.fieldId}`}
+                              className="block text-white/80"
+                            >
+                              {`{ field_id: ${field.fieldId}, code: "${field.code}", label: "${field.label}", assigned_at: "${field.assignedAt}" }`}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="italic text-white/35">null</span>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-2 text-[10px] uppercase tracking-[0.18em] text-white/65">
+                    Press any key to exit . . .
+                  </div>
+                </>
+              ) : (
+                <p className="text-white/45">No members match your query.</p>
+              )}
+            </div>
           ) : (
-            <p className="text-white/45">No members match your query.</p>
+            <div className="space-y-1 font-mono text-[13px]">
+              {filteredMembers.map((member, index) => {
+                const tagLabel = member.tags.length
+                  ? member.tags.join(", ")
+                  : "-";
+                const isSelected = member.id === selectedMember?.id;
+
+                return (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedMemberId(member.id);
+                      setIsDetailOpen(true);
+                    }}
+                    className={`grid w-full grid-cols-[auto_44px_minmax(140px,1fr)_minmax(160px,1fr)_minmax(180px,2fr)] items-center gap-x-3 border-l-2 px-2 py-1 text-left transition-colors duration-200 ${
+                      isSelected
+                        ? "border-[#4a9eff] bg-[rgba(74,158,255,0.12)]"
+                        : "border-transparent hover:border-[#4a9eff] hover:bg-[rgba(74,158,255,0.08)]"
+                    }`}
+                  >
+                    <span className="text-[#4a9eff]">&nbsp;</span>
+                    <span className="text-white/40">
+                      [{String(index + 1).padStart(2, "0")}]
+                    </span>
+                    <span className="min-w-0 truncate font-semibold text-white">
+                      {member.name}
+                    </span>
+                    <span className="min-w-0 truncate text-[rgba(56,189,248,0.8)]">
+                      @{member.handle}
+                    </span>
+                    <span
+                      className={
+                        tagLabel === "-"
+                          ? "min-w-0 truncate italic text-white/30"
+                          : "min-w-0 truncate text-[rgba(251,191,36,0.9)]"
+                      }
+                    >
+                      {tagLabel}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
 

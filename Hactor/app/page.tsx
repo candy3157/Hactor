@@ -125,7 +125,7 @@ export default function Home() {
                 Members
               </h2>
               <p className="mt-1 text-xs text-white/50">
-                Current active players in the team.
+                Current active members in the team.
               </p>
             </div>
 
