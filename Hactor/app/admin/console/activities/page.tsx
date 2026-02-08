@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "@/app/components/AdminSidebar";
+import ConfirmDangerModal from "@/app/components/admin/modals/ConfirmDangerModal";
 
 type Activity = {
   id: string;
@@ -25,6 +26,7 @@ export default function AdminActivitiesPage() {
   const [draft, setDraft] = useState<Activity>(emptyDraft);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const selected = useMemo(
     () => activities.find((item) => item.id === selectedId) ?? null,
@@ -130,6 +132,48 @@ export default function AdminActivitiesPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedId) {
+      return;
+    }
+
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/activities/${selectedId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorPayload = (await res.json().catch(() => null)) as
+          | { message?: string }
+          | null;
+        throw new Error(errorPayload?.message ?? "활동 삭제에 실패했습니다.");
+      }
+
+      const nextActivities = activities.filter((item) => item.id !== selectedId);
+      setActivities(nextActivities);
+
+      if (nextActivities.length > 0) {
+        setSelectedId(nextActivities[0].id);
+        setDraft(nextActivities[0]);
+      } else {
+        setSelectedId(null);
+        setDraft({
+          ...emptyDraft,
+          year: new Date().getFullYear(),
+        });
+      }
+
+      setIsDeleteModalOpen(false);
+      setMessage("삭제 완료");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "삭제 실패");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleNew = () => {
     setSelectedId(null);
     setDraft({
@@ -137,6 +181,20 @@ export default function AdminActivitiesPage() {
       year: new Date().getFullYear(),
     });
     setMessage(null);
+  };
+
+  const openDeleteModal = () => {
+    if (!selectedId || isLoading) {
+      return;
+    }
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (isLoading) {
+      return;
+    }
+    setIsDeleteModalOpen(false);
   };
 
   return (
@@ -172,9 +230,7 @@ export default function AdminActivitiesPage() {
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                   활동
                 </p>
-                <span className="text-sm text-white/70">
-                  {activities.length}개
-                </span>
+                <span className="text-sm text-white/70">{activities.length}개</span>
               </div>
 
               <div className="mt-6 space-y-3">
@@ -310,11 +366,41 @@ export default function AdminActivitiesPage() {
                 >
                   {selectedId ? "저장" : "추가"}
                 </button>
+
+                {selectedId && (
+                  <button
+                    type="button"
+                    onClick={openDeleteModal}
+                    disabled={isLoading}
+                    className="inline-flex h-11 w-full items-center justify-center rounded-full border border-rose-300/30 bg-rose-400/10 text-xs uppercase tracking-[0.28em] text-rose-100/80 transition hover:border-rose-200/50 hover:bg-rose-400/20 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    활동 삭제
+                  </button>
+                )}
               </form>
             </section>
           </div>
         </main>
       </div>
+      <ConfirmDangerModal
+        open={isDeleteModalOpen && !!selectedId}
+        isLoading={isLoading}
+        title="활동을 삭제하시겠습니까?"
+        description={
+          selectedId ? (
+            <>
+              <strong className="font-semibold text-[#ff4d4d]">
+                {activities.find((item) => item.id === selectedId)?.title ??
+                  "선택한 활동"}
+              </strong>{" "}
+              항목이 영구적으로 삭제됩니다.
+            </>
+          ) : null
+        }
+        warningText="삭제된 데이터는 복구할 수 없습니다. 신중하게 선택해 주세요."
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

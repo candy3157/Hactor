@@ -15,9 +15,7 @@ type ActivitiesTerminalProps = {
 };
 
 type ViewMode = "icon" | "list";
-type DirectoryState =
-  | { kind: "desktop" }
-  | { kind: "year"; year: number };
+type DirectoryState = { kind: "activities" } | { kind: "year"; year: number };
 
 const DEFAULT_YEARS = [2025, 2026];
 
@@ -35,14 +33,9 @@ const filterActivities = (activities: ActivityRow[], query: string) => {
   });
 };
 
-const toFileName = (title: string, index: number) => {
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-
-  const safeSlug = slug || `activity_${index + 1}`;
-  return `${safeSlug}.log`;
+const toFileName = (title: string) => {
+  const safeTitle = title.trim() || "activity";
+  return `${safeTitle}.log`;
 };
 
 export default function ActivitiesTerminal({
@@ -51,7 +44,7 @@ export default function ActivitiesTerminal({
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("icon");
   const [currentDir, setCurrentDir] = useState<DirectoryState>({
-    kind: "desktop",
+    kind: "activities",
   });
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
 
@@ -95,13 +88,15 @@ export default function ActivitiesTerminal({
   );
 
   const path =
-    currentDir.kind === "desktop"
-      ? "/home/kali/Desktop"
-      : `/home/kali/Desktop/${currentDir.year}`;
+    currentDir.kind === "activities"
+      ? "/kali/Hactor/Activities"
+      : `/kali/Hactor/Activities/${currentDir.year}`;
   const currentDirActivities =
-    currentDir.kind === "year" ? activitiesByYear.get(currentDir.year) ?? [] : [];
+    currentDir.kind === "year"
+      ? (activitiesByYear.get(currentDir.year) ?? [])
+      : [];
   const currentDirName =
-    currentDir.kind === "desktop" ? "Desktop" : String(currentDir.year);
+    currentDir.kind === "activities" ? "Activities" : String(currentDir.year);
 
   return (
     <div className="relative min-h-[560px] overflow-hidden rounded-2xl border border-white/10 bg-[#060a12] shadow-[0_30px_90px_rgba(0,0,0,0.6)]">
@@ -115,11 +110,6 @@ export default function ActivitiesTerminal({
           <span>Terminal</span>
         </div>
         <span>{nowLabel}</span>
-        <div className="flex items-center gap-3 text-white/60">
-          <span>NET</span>
-          <span>VOL</span>
-          <span>PWR</span>
-        </div>
       </div>
 
       <div className="pointer-events-none absolute bottom-5 left-6 hidden rounded-md border border-white/10 bg-[rgba(20,26,40,0.75)] px-4 py-2 text-center font-mono text-[#7dd6ff] shadow-[0_12px_30px_rgba(0,0,0,0.4)] lg:block">
@@ -128,14 +118,14 @@ export default function ActivitiesTerminal({
       </div>
 
       <div className="relative z-10 flex min-h-[560px] items-center justify-center px-4 pb-5 pt-12">
-        <div className="flex h-full max-h-[500px] w-full max-w-[1020px] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-[rgba(31,36,48,0.96)] shadow-[0_22px_70px_rgba(0,0,0,0.55)]">
+        <div className="flex h-[500px] w-full max-w-[1020px] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-[rgba(31,36,48,0.96)] shadow-[0_22px_70px_rgba(0,0,0,0.55)]">
           <div className="flex items-center justify-between border-b border-white/10 bg-[rgba(28,32,43,0.95)] px-4 py-2">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
               <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
               <span className="h-3 w-3 rounded-full bg-[#28ca42]" />
             </div>
-            <p className="text-[13px] text-white/65">Computer</p>
+            <p className="text-[13px] text-white/65">Activiteis</p>
             <div className="w-12" />
           </div>
 
@@ -143,13 +133,13 @@ export default function ActivitiesTerminal({
             <button
               type="button"
               onClick={() => {
-                if (currentDir.kind === "desktop") {
+                if (currentDir.kind === "activities") {
                   return;
                 }
-                setCurrentDir({ kind: "desktop" });
+                setCurrentDir({ kind: "activities" });
                 setSelectedFile(null);
               }}
-              disabled={currentDir.kind === "desktop"}
+              disabled={currentDir.kind === "activities"}
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-[rgba(21,27,38,0.8)] text-sm text-white/70 transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
               aria-label="Back"
             >
@@ -199,22 +189,27 @@ export default function ActivitiesTerminal({
           <div className="flex min-h-0 flex-1">
             <aside className="hidden w-56 border-r border-white/10 bg-[rgba(30,35,47,0.85)] p-3 text-[13px] text-white/65 md:block">
               <div className="rounded-md bg-[rgba(90,159,212,0.2)] px-3 py-2 text-white">
-                Starred
+                Activities
               </div>
               <div className="mt-1 space-y-1">
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">Home</div>
+                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                  Home
+                </div>
                 <div className="rounded-md px-3 py-2 hover:bg-white/8">
                   Documents
                 </div>
                 <div className="rounded-md px-3 py-2 hover:bg-white/8">
                   Downloads
                 </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">Music</div>
+                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                  Music
+                </div>
                 <div className="rounded-md px-3 py-2 hover:bg-white/8">
                   Pictures
                 </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">Videos</div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">Trash</div>
+                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                  Videos
+                </div>
               </div>
               <div className="my-2 h-px bg-white/10" />
               <div className="rounded-md px-3 py-2 hover:bg-white/8">
@@ -222,8 +217,8 @@ export default function ActivitiesTerminal({
               </div>
             </aside>
 
-            <section className="min-w-0 flex-1 overflow-y-auto bg-[rgba(22,27,39,0.58)] p-5">
-              {currentDir.kind === "desktop" ? (
+            <section className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-[rgba(22,27,39,0.58)] p-5">
+              {currentDir.kind === "activities" ? (
                 <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
                   {years.map((year) => (
                     <button
@@ -251,8 +246,8 @@ export default function ActivitiesTerminal({
                 </div>
               ) : viewMode === "icon" ? (
                 <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-                  {currentDirActivities.map((activity, index) => {
-                    const fileName = toFileName(activity.title, index);
+                  {currentDirActivities.map((activity) => {
+                    const fileName = toFileName(activity.title);
                     const isSelected = selectedFile === fileName;
 
                     return (
@@ -290,8 +285,8 @@ export default function ActivitiesTerminal({
                     <span>Modified</span>
                     <span>Type</span>
                   </div>
-                  {currentDirActivities.map((activity, index) => {
-                    const fileName = toFileName(activity.title, index);
+                  {currentDirActivities.map((activity) => {
+                    const fileName = toFileName(activity.title);
                     const isSelected = selectedFile === fileName;
 
                     return (
@@ -311,7 +306,9 @@ export default function ActivitiesTerminal({
                           width={22}
                           height={26}
                         />
-                        <span className="truncate text-white/90">{fileName}</span>
+                        <span className="truncate text-white/90">
+                          {fileName}
+                        </span>
                         <span className="truncate text-white/55">
                           {activity.dateLabel}
                         </span>
@@ -328,7 +325,7 @@ export default function ActivitiesTerminal({
 
           <div className="flex items-center justify-between border-t border-white/10 bg-[rgba(28,33,45,0.95)] px-3 py-1.5 text-[10px] text-white/45">
             <span>
-              {currentDir.kind === "desktop"
+              {currentDir.kind === "activities"
                 ? `${years.length} items`
                 : `${currentDirActivities.length} items`}
             </span>

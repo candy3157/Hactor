@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "@/app/components/AdminSidebar";
+import ConfirmDangerModal from "@/app/components/admin/modals/ConfirmDangerModal";
 import DatePicker from "react-datepicker";
 import { ko } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
@@ -106,27 +107,6 @@ export default function AdminUsersPage() {
         : null,
     );
   }, [selectedMember]);
-
-  useEffect(() => {
-    if (!isDeleteModalOpen) {
-      return;
-    }
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsDeleteModalOpen(false);
-      }
-    };
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isDeleteModalOpen]);
 
   const toggleField = (fieldId: number) => {
     setDraft((prev) => {
@@ -246,7 +226,9 @@ export default function AdminUsersPage() {
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                   Members
                 </p>
-                <span className="text-sm text-white/70">{members.length}명</span>
+                <span className="text-sm text-white/70">
+                  {members.length}명
+                </span>
               </div>
 
               {members.length === 0 ? (
@@ -409,7 +391,7 @@ export default function AdminUsersPage() {
                     <div className="mt-2">
                       <DatePicker
                         selected={joinDate}
-                        onChange={(date) => setJoinDate(date)}
+                        onChange={(date: Date | null) => setJoinDate(date)}
                         locale={ko}
                         dateFormat="yyyy년 MM월 dd일"
                         showYearDropdown
@@ -461,97 +443,26 @@ export default function AdminUsersPage() {
           </div>
         </main>
       </div>
-      {isDeleteModalOpen && selectedMember && (
-        <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 p-5 backdrop-blur-[4px]"
-          role="presentation"
-          onClick={closeDeleteModal}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-modal-title"
-            className="w-full max-w-[440px] rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.5)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mx-auto mb-6 flex h-14 w-14 animate-[shake_0.5s_ease] items-center justify-center rounded-full border-2 border-[rgba(255,77,77,0.3)] bg-[linear-gradient(135deg,rgba(255,77,77,0.15)_0%,rgba(204,0,0,0.15)_100%)]">
-              <svg
-                className="h-7 w-7 text-[#ff4d4d]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                />
-              </svg>
-            </div>
-
-            <div className="text-center">
-              <h2
-                id="delete-modal-title"
-                className="mb-3 text-[22px] font-semibold tracking-[-0.3px] text-white"
-              >
-                멤버를 삭제하시겠습니까?
-              </h2>
-              <p className="text-sm leading-relaxed text-[#888]">
-                <strong className="font-semibold text-[#ff4d4d]">
-                  {selectedMember.username
-                    ? `${selectedMember.username}(${selectedMember.displayName})`
-                    : selectedMember.displayName}
-                </strong>{" "}
-                님의 모든 데이터가 영구적으로 삭제됩니다.
-              </p>
-            </div>
-
-            <div className="my-5 rounded-[10px] border border-[rgba(255,77,77,0.2)] bg-[rgba(255,77,77,0.08)] p-4">
-              <div className="mb-2 flex items-center gap-2 text-[13px] font-semibold text-[#ff6b6b]">
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-                주의사항
-              </div>
-              <p className="text-[13px] leading-relaxed text-[#999]">
-                삭제된 데이터는 복구할 수 없습니다. 신중하게 선택해 주세요.
-              </p>
-            </div>
-
-            <div className="mt-7 flex gap-3">
-              <button
-                type="button"
-                onClick={closeDeleteModal}
-                disabled={isLoading}
-                className="flex-1 rounded-lg border border-[#3a3a3a] bg-[#2a2a2a] px-6 py-3.5 text-[15px] font-medium text-white transition hover:border-[#444] hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={isLoading}
-                className="flex-1 rounded-lg bg-[linear-gradient(135deg,#ff4d4d_0%,#cc0000_100%)] px-6 py-3.5 text-[15px] font-medium text-white transition hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,77,77,0.4)] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isLoading ? "삭제 중..." : "삭제"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDangerModal
+        open={isDeleteModalOpen && !!selectedMember}
+        isLoading={isLoading}
+        title="멤버를 삭제하시겠습니까?"
+        description={
+          selectedMember ? (
+            <>
+              <strong className="font-semibold text-[#ff4d4d]">
+                {selectedMember.username
+                  ? `${selectedMember.username}(${selectedMember.displayName})`
+                  : selectedMember.displayName}
+              </strong>{" "}
+              님의 모든 데이터가 영구적으로 삭제됩니다.
+            </>
+          ) : null
+        }
+        warningText="삭제된 데이터는 복구할 수 없습니다. 신중하게 선택해 주세요."
+        onClose={closeDeleteModal}
+        onConfirm={handleDelete}
+      />
       <style jsx global>{`
         .react-datepicker-wrapper {
           width: 100%;
@@ -605,18 +516,6 @@ export default function AdminUsersPage() {
         }
         .react-datepicker__navigation-icon::before {
           border-color: rgba(255, 255, 255, 0.7);
-        }
-        @keyframes shake {
-          0%,
-          100% {
-            transform: translateX(0);
-          }
-          25% {
-            transform: translateX(-4px);
-          }
-          75% {
-            transform: translateX(4px);
-          }
         }
       `}</style>
     </div>

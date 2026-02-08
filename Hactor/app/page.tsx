@@ -2,6 +2,7 @@
 import Link from "next/link";
 import localFont from "next/font/local";
 import ConstellationBackground from "./components/ConstellationBackground";
+import MembersMarquee from "./components/main/members/MembersMarquee";
 import TypingText from "./components/TypingText";
 import { activityCatalog } from "./data/activities";
 import { members } from "./data/members";
@@ -48,32 +49,6 @@ const formatTimelineDate = (date: string) => {
   return [date.toUpperCase()];
 };
 
-const toneStyles: Record<string, string> = {
-  ruby: "border-rose-400/30 bg-rose-500/15 text-rose-100",
-  ember: "border-amber-400/30 bg-amber-400/10 text-amber-100",
-  frost: "border-sky-400/30 bg-sky-400/10 text-sky-100",
-  moss: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100",
-  slate: "border-white/10 bg-white/5 text-white/70",
-};
-
-const marqueeCopies = [0, 1];
-
-function Tag({
-  label,
-  tone = "slate",
-}: {
-  label: string;
-  tone?: keyof typeof toneStyles;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.2em] ${toneStyles[tone]}`}
-    >
-      {label}
-    </span>
-  );
-}
-
 export default function Home() {
   return (
     <div
@@ -116,6 +91,22 @@ export default function Home() {
 
           <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
+          <section className="mt-8 space-y-4 text-left">
+            <div>
+              <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
+                About
+              </span>
+              <h2 className="mt-3 font-[var(--font-display)] text-xl tracking-[0.12em] text-white">
+                About
+              </h2>
+            </div>
+            <div className="rounded-2xl border border-dashed border-white/15 bg-[rgba(18,18,24,0.45)] p-6 text-xs text-white/35">
+              {/* About section content will be added later */}
+            </div>
+          </section>
+
+          <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
           <section className="mt-8 space-y-5 text-center">
             <div>
               <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
@@ -129,47 +120,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group relative overflow-hidden py-2 [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
-              <div className="flex w-max flex-nowrap gap-4 will-change-transform animate-[ruby-marquee_30s_linear_infinite] group-hover:[animation-play-state:paused]">
-                {marqueeCopies.map((copyIndex) => (
-                  <div
-                    key={`marquee-copy-${copyIndex}`}
-                    className="flex shrink-0 gap-4"
-                    aria-hidden={copyIndex === 1}
-                  >
-                    {members.map((member) => (
-                      <div
-                        key={`${member.name}-${copyIndex}`}
-                        className="w-[220px] flex-none rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.75)] p-4 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">
-                            {member.name.slice(0, 2)}
-                          </div>
-                          <div className="text-left">
-                            <p className="text-sm font-semibold text-white">
-                              {member.name}
-                            </p>
-                            <p className="text-[11px] text-white/50">
-                              @{member.handle}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {member.tags.map((tag) => (
-                            <Tag
-                              key={`${member.name}-${tag.label}-${copyIndex}`}
-                              label={tag.label}
-                              tone={tag.tone}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <MembersMarquee members={members} />
 
             <div className="flex justify-center">
               <Link

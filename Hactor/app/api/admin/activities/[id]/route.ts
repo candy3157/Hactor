@@ -85,3 +85,42 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true, activity: updated });
 }
+
+export async function DELETE(
+  _request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+
+  if (!id) {
+    return NextResponse.json(
+      { ok: false, message: "Missing activity id" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await prisma.activity.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { ok: false, message: "Activity not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(
+      { ok: false, message: "Failed to delete activity" },
+      { status: 500 },
+    );
+  }
+}
