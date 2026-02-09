@@ -9,14 +9,14 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sf);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-sf);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sf), var(--font-body, var(--font-geist-sans)), Arial,
-    Helvetica, sans-serif;
+  font-family: var(--font-sf), var(--font-body, var(--font-sf)), Arial, Helvetica,
+    sans-serif;
 }
 
 /* Global dark scrollbar */

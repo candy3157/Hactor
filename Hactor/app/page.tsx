@@ -49,6 +49,47 @@ const formatTimelineDate = (date: string) => {
   return [date.toUpperCase()];
 };
 
+const DISCORD_INVITE_URL = "#";
+
+const joinUsCards = [
+  {
+    icon: "💬",
+    title: "지원 방법",
+    description: "디스코드 링크 클릭",
+    description2: "→ 간단한 자기소개",
+  },
+  {
+    icon: "⏰",
+    title: "모집 시기",
+    description: "상시 모집",
+    description2: "(학기 중 진행)",
+  },
+  {
+    icon: "📋",
+    title: "자격 요건",
+    description: "정보보안 관심자",
+    description2: "누구나 환영",
+  },
+];
+
+const joinUsFaq = [
+  {
+    question: "코딩을 못해도 괜찮나요?",
+    answer:
+      "네. 처음부터 함께 배워나갈 수 있습니다. 기초부터 차근차근 스터디를 진행하고 있어요.",
+  },
+  {
+    question: "활동 시간은 어떻게 되나요?",
+    answer:
+      "주 1회 정기 스터디와 자율 온라인 활동이 있습니다. 학기 일정에 맞춰 부담 없이 참여할 수 있습니다.",
+  },
+  {
+    question: "회비가 있나요?",
+    answer:
+      "기본 회비는 없습니다. 다만 외부 활동(해커톤, CTF 대회 등) 참가 시 개인 비용이 발생할 수 있습니다.",
+  },
+];
+
 export default function Home() {
   return (
     <div
@@ -255,6 +296,97 @@ export default function Home() {
                 </div>
               </details>
             ))}
+          </section>
+
+          <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+
+          <section id="join-us" className="mt-8 space-y-5 scroll-mt-24 text-left">
+            <div className="text-center">
+              <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
+                Join Us
+              </span>
+            </div>
+
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(160deg,rgba(20,27,24,0.82)_0%,rgba(16,20,23,0.84)_55%,rgba(12,15,18,0.88)_100%)] p-6 [box-shadow:0_22px_48px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md sm:p-9">
+              <div className="pointer-events-none absolute -left-12 -top-24 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-20 right-0 h-52 w-52 rounded-full bg-indigo-400/10 blur-3xl" />
+
+              <div className="text-center">
+                <h2 className="bg-gradient-to-r from-emerald-200 via-indigo-200 to-violet-200 bg-clip-text font-[var(--font-display)] text-3xl tracking-[0.08em] text-transparent sm:text-4xl">
+                  함께 성장할 동료를 찾습니다
+                </h2>
+                <p className="mt-4 text-lg text-white/78">초보자도 환영합니다</p>
+                <p className="mt-1 text-sm text-white/55">
+                  열정과 호기심만 있다면 충분합니다
+                </p>
+              </div>
+
+              <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+                {joinUsCards.map((card) => (
+                  <article
+                    key={card.title}
+                    className="rounded-2xl border border-white/10 bg-[rgba(15,20,23,0.72)] p-5 text-center [box-shadow:inset_0_1px_0_rgba(255,255,255,0.04)]"
+                  >
+                    <p className="text-3xl">{card.icon}</p>
+                    <h3 className="mt-3 text-base font-semibold text-white/90">
+                      {card.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-white/65">{card.description}</p>
+                    <p className="text-sm text-white/65">{card.description2}</p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mt-8 text-center">
+                <a
+                  href={DISCORD_INVITE_URL}
+                  className="inline-flex items-center gap-3 rounded-full border border-indigo-300/30 bg-gradient-to-r from-indigo-500/88 to-violet-500/88 px-7 py-3 text-sm font-semibold tracking-[0.08em] text-white shadow-[0_12px_30px_rgba(79,70,229,0.3)] transition hover:from-indigo-500 hover:to-violet-500 hover:shadow-[0_15px_38px_rgba(79,70,229,0.4)]"
+                >
+                  <svg
+                    className="h-5 w-5"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.12-.09.246-.187.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.126.105.252.202.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03ZM8.02 15.331c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.086-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z" />
+                  </svg>
+                  디스코드 참여하기
+                </a>
+                <p className="mt-4 text-xs text-white/45">
+                  또는 이메일 문의:{" "}
+                  <a
+                    href="mailto:hactor@example.com"
+                    className="text-indigo-300 transition-colors hover:text-indigo-200"
+                  >
+                    hactor@example.com
+                  </a>
+                </p>
+              </div>
+
+              <div className="mt-9 border-t border-white/10 pt-7">
+                <h3 className="text-center text-lg font-semibold text-white/88">
+                  자주 묻는 질문
+                </h3>
+                <div className="mt-4 space-y-3">
+                  {joinUsFaq.map((faq) => (
+                    <details
+                      key={faq.question}
+                      className="group rounded-xl border border-white/10 bg-[rgba(14,18,22,0.74)] p-4"
+                    >
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-medium text-white/90">
+                        <span>{faq.question}</span>
+                        <span className="text-white/50 transition-transform duration-200 group-open:rotate-180">
+                          ▼
+                        </span>
+                      </summary>
+                      <p className="mt-3 text-sm leading-6 text-white/63">
+                        {faq.answer}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </div>
           </section>
         </main>
       </div>

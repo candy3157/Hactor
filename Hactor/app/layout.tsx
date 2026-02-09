@@ -1,17 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const sfPro = localFont({
   src: [
@@ -41,9 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body
-        className={`${sfPro.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${sfPro.variable} antialiased`}>
         {children}
       </body>
     </html>
