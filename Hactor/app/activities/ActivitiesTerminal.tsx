@@ -1,9 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 type ActivityRow = {
+  id: string;
+  date: string;
   title: string;
   dateLabel: string;
   year: number;
@@ -18,6 +21,7 @@ type ViewMode = "icon" | "list";
 type DirectoryState = { kind: "activities" } | { kind: "year"; year: number };
 
 const DEFAULT_YEARS = [2025, 2026];
+const ACTIVITY_RETURN_STATE_KEY = "activities:return-state";
 
 const filterActivities = (activities: ActivityRow[], query: string) => {
   const normalized = query.trim().toLowerCase();
@@ -38,18 +42,61 @@ const toFileName = (title: string) => {
   return `${safeTitle}.log`;
 };
 
+const compareActivitiesByDateDesc = (a: ActivityRow, b: ActivityRow) => {
+  const aTime = Date.parse(a.date);
+  const bTime = Date.parse(b.date);
+
+  if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) {
+    return bTime - aTime;
+  }
+
+  return a.title.localeCompare(b.title);
+};
+
 export default function ActivitiesTerminal({
   activities,
 }: ActivitiesTerminalProps) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("icon");
   const [currentDir, setCurrentDir] = useState<DirectoryState>({
     kind: "activities",
   });
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
+    null,
+  );
+  const [pendingActivityId, setPendingActivityId] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    const rawState = window.sessionStorage.getItem(ACTIVITY_RETURN_STATE_KEY);
+    if (!rawState) {
+      return;
+    }
+
+    window.sessionStorage.removeItem(ACTIVITY_RETURN_STATE_KEY);
+
+    try {
+      const parsed = JSON.parse(rawState) as {
+        year?: unknown;
+        selectedActivityId?: unknown;
+      };
+
+      if (typeof parsed.year === "number" && Number.isInteger(parsed.year)) {
+        setCurrentDir({ kind: "year", year: parsed.year });
+      }
+
+      if (typeof parsed.selectedActivityId === "string") {
+        setSelectedActivityId(parsed.selectedActivityId);
+      }
+    } catch {
+      // Ignore malformed state from session storage.
+    }
+  }, []);
 
   const filteredActivities = useMemo(
-    () => filterActivities(activities, query),
+    () => filterActivities(activities, query).sort(compareActivitiesByDateDesc),
     [activities, query],
   );
 
@@ -72,6 +119,11 @@ export default function ActivitiesTerminal({
       }
       grouped.get(activity.year)?.push(activity);
     });
+
+    grouped.forEach((items, year) => {
+      grouped.set(year, [...items].sort(compareActivitiesByDateDesc));
+    });
+
     return grouped;
   }, [filteredActivities, years]);
 
@@ -97,6 +149,30 @@ export default function ActivitiesTerminal({
       : [];
   const currentDirName =
     currentDir.kind === "activities" ? "Activities" : String(currentDir.year);
+  const isNavigating = pendingActivityId !== null;
+
+  const openActivityDetail = (activity: ActivityRow) => {
+    if (isNavigating) {
+      return;
+    }
+
+    setSelectedActivityId(activity.id);
+    setPendingActivityId(activity.id);
+
+    try {
+      window.sessionStorage.setItem(
+        ACTIVITY_RETURN_STATE_KEY,
+        JSON.stringify({
+          year: activity.year,
+          selectedActivityId: activity.id,
+        }),
+      );
+    } catch {
+      // Best-effort only; navigation should continue even if storage is blocked.
+    }
+
+    router.push(`/activities/${activity.id}`);
+  };
 
   return (
     <div className="relative min-h-[560px] overflow-hidden rounded-2xl border border-white/10 bg-[#060a12] shadow-[0_30px_90px_rgba(0,0,0,0.6)]">
@@ -137,9 +213,9 @@ export default function ActivitiesTerminal({
                   return;
                 }
                 setCurrentDir({ kind: "activities" });
-                setSelectedFile(null);
+                setSelectedActivityId(null);
               }}
-              disabled={currentDir.kind === "activities"}
+              disabled={currentDir.kind === "activities" || isNavigating}
               className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-[rgba(21,27,38,0.8)] text-sm text-white/70 transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
               aria-label="Back"
             >
@@ -147,7 +223,13 @@ export default function ActivitiesTerminal({
             </button>
 
             <div className="flex h-8 min-w-0 flex-1 items-center rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] px-3 text-[12px] text-white/75">
-              {path}
+              <span className="truncate">{path}</span>
+              {isNavigating ? (
+                <span className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#6cb5e9]/40 bg-[rgba(74,158,255,0.14)] px-2 py-0.5 text-[10px] text-[#9ed6ff]">
+                  <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+                  Opening...
+                </span>
+              ) : null}
             </div>
 
             <input
@@ -155,13 +237,15 @@ export default function ActivitiesTerminal({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search..."
               aria-label="Search activities"
-              className="h-8 w-40 rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] px-3 text-[12px] text-white/80 outline-none placeholder:text-white/35 sm:w-52"
+              disabled={isNavigating}
+              className="h-8 w-40 rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] px-3 text-[12px] text-white/80 outline-none placeholder:text-white/35 disabled:cursor-not-allowed disabled:opacity-45 sm:w-52"
             />
 
             <div className="flex items-center gap-1 rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] p-1">
               <button
                 type="button"
                 onClick={() => setViewMode("icon")}
+                disabled={isNavigating}
                 className={`inline-flex h-6 w-6 items-center justify-center rounded text-[11px] transition ${
                   viewMode === "icon"
                     ? "bg-[rgba(90,159,212,0.35)] text-[#9ed6ff]"
@@ -174,6 +258,7 @@ export default function ActivitiesTerminal({
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
+                disabled={isNavigating}
                 className={`inline-flex h-6 w-6 items-center justify-center rounded text-[11px] transition ${
                   viewMode === "list"
                     ? "bg-[rgba(90,159,212,0.35)] text-[#9ed6ff]"
@@ -226,9 +311,10 @@ export default function ActivitiesTerminal({
                       type="button"
                       onDoubleClick={() => {
                         setCurrentDir({ kind: "year", year });
-                        setSelectedFile(null);
+                        setSelectedActivityId(null);
                       }}
-                      className="group relative flex flex-col items-center gap-2 rounded-lg px-2 py-3 transition hover:bg-white/10"
+                      disabled={isNavigating}
+                      className="group relative flex flex-col items-center gap-2 rounded-lg px-2 py-3 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-55"
                     >
                       <Image
                         src="/folder_temp.svg"
@@ -248,15 +334,21 @@ export default function ActivitiesTerminal({
                 <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
                   {currentDirActivities.map((activity) => {
                     const fileName = toFileName(activity.title);
-                    const isSelected = selectedFile === fileName;
+                    const isSelected = selectedActivityId === activity.id;
+                    const isPending = pendingActivityId === activity.id;
+                    const isDimmed = isNavigating && !isPending;
 
                     return (
                       <button
-                        key={`${fileName}-${activity.dateLabel}`}
+                        key={activity.id}
                         type="button"
-                        onClick={() => setSelectedFile(fileName)}
+                        onClick={() => setSelectedActivityId(activity.id)}
+                        onDoubleClick={() => openActivityDetail(activity)}
+                        disabled={isNavigating}
                         className={`flex flex-col items-center gap-2 rounded-lg px-2 py-3 transition ${
-                          isSelected
+                          isDimmed
+                            ? "opacity-50"
+                            : isSelected
                             ? "bg-[rgba(90,159,212,0.22)]"
                             : "hover:bg-white/10"
                         }`}
@@ -270,9 +362,16 @@ export default function ActivitiesTerminal({
                         <span className="line-clamp-2 text-center text-[12px] text-white/90">
                           {fileName}
                         </span>
-                        <span className="text-[10px] text-white/45">
-                          {activity.dateLabel}
-                        </span>
+                        {isPending ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[#9ed6ff]">
+                            <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+                            Opening...
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-white/45">
+                            {activity.dateLabel}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -287,15 +386,21 @@ export default function ActivitiesTerminal({
                   </div>
                   {currentDirActivities.map((activity) => {
                     const fileName = toFileName(activity.title);
-                    const isSelected = selectedFile === fileName;
+                    const isSelected = selectedActivityId === activity.id;
+                    const isPending = pendingActivityId === activity.id;
+                    const isDimmed = isNavigating && !isPending;
 
                     return (
                       <button
-                        key={`${fileName}-${activity.dateLabel}-row`}
+                        key={activity.id}
                         type="button"
-                        onClick={() => setSelectedFile(fileName)}
+                        onClick={() => setSelectedActivityId(activity.id)}
+                        onDoubleClick={() => openActivityDetail(activity)}
+                        disabled={isNavigating}
                         className={`grid w-full grid-cols-[42px_minmax(180px,2fr)_minmax(90px,1fr)_minmax(80px,0.8fr)] items-center gap-3 rounded-md px-3 py-2 text-left transition ${
-                          isSelected
+                          isDimmed
+                            ? "opacity-50"
+                            : isSelected
                             ? "bg-[rgba(90,159,212,0.22)]"
                             : "hover:bg-white/10"
                         }`}
@@ -309,9 +414,16 @@ export default function ActivitiesTerminal({
                         <span className="truncate text-white/90">
                           {fileName}
                         </span>
-                        <span className="truncate text-white/55">
-                          {activity.dateLabel}
-                        </span>
+                        {isPending ? (
+                          <span className="inline-flex items-center gap-1 truncate text-[#9ed6ff]">
+                            <span className="h-2.5 w-2.5 shrink-0 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+                            Opening...
+                          </span>
+                        ) : (
+                          <span className="truncate text-white/55">
+                            {activity.dateLabel}
+                          </span>
+                        )}
                         <span className="truncate text-white/60">
                           {activity.category}
                         </span>
@@ -329,7 +441,14 @@ export default function ActivitiesTerminal({
                 ? `${years.length} items`
                 : `${currentDirActivities.length} items`}
             </span>
-            <span>{currentDirName}</span>
+            {isNavigating ? (
+              <span className="inline-flex items-center gap-1.5 text-[#9ed6ff]">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+                Loading detail...
+              </span>
+            ) : (
+              <span>{currentDirName}</span>
+            )}
           </div>
         </div>
       </div>

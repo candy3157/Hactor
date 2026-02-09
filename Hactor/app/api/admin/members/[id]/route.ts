@@ -40,7 +40,7 @@ export async function PATCH(
     : null;
 
   const updated = await prisma.$transaction(async (tx) => {
-    const member = await tx.member.update({
+    await tx.member.update({
       where: { id },
       data: {
         displayName: payload.displayName?.trim(),
@@ -70,7 +70,7 @@ export async function PATCH(
       }
     }
 
-    const refreshed = await tx.member.findUnique({
+    const refreshed = await tx.member.findUniqueOrThrow({
       where: { id },
       include: {
         fields: {
@@ -78,11 +78,6 @@ export async function PATCH(
         },
       },
     });
-
-    if (!refreshed) {
-      return member;
-    }
-
     return refreshed;
   });
 
@@ -94,13 +89,10 @@ export async function PATCH(
     avatarUrl: updated.avatarUrl,
     discordJoinedAt: updated.discordJoinedAt,
     isActive: updated.isActive,
-    fields:
-      "fields" in updated
-        ? updated.fields.map((entry) => ({
-            fieldId: entry.fieldId,
-            label: entry.field.label,
-          }))
-        : [],
+    fields: updated.fields.map((entry) => ({
+      fieldId: entry.fieldId,
+      label: entry.field.label,
+    })),
   };
 
   return NextResponse.json({ ok: true, member: response });

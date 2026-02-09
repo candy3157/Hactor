@@ -7,23 +7,101 @@ import ConfirmDangerModal from "@/app/components/admin/modals/ConfirmDangerModal
 type Activity = {
   id: string;
   title: string;
+  date: string;
   dateLabel: string;
   year: number;
   category: string;
+  content: string;
+  imageUrls: string[];
 };
+
+type ActivityFromApi = {
+  id: string;
+  title: string;
+  date?: string;
+  dateLabel?: string;
+  year?: number;
+  category: string;
+  content?: string;
+  imageUrls?: string[];
+};
+
+const toDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateLabel = (dateValue: string) => {
+  if (!dateValue) {
+    return "";
+  }
+
+  const parsed = new Date(`${dateValue}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    timeZone: "UTC",
+  })
+    .format(parsed)
+    .toUpperCase();
+};
+
+const extractYear = (dateValue: string) => {
+  const parsed = new Date(`${dateValue}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return new Date().getFullYear();
+  }
+
+  return parsed.getUTCFullYear();
+};
+
+const defaultDate = toDateInputValue(new Date());
 
 const emptyDraft: Activity = {
   id: "",
   title: "",
-  dateLabel: "",
-  year: new Date().getFullYear(),
+  date: defaultDate,
+  dateLabel: formatDateLabel(defaultDate),
+  year: extractYear(defaultDate),
   category: "",
+  content: "",
+  imageUrls: [],
+};
+
+const parseImageUrls = (raw: string) =>
+  raw
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+const normalizeActivity = (activity: ActivityFromApi): Activity => {
+  const date = activity.date ?? defaultDate;
+  const year = activity.year ?? extractYear(date);
+  const dateLabel = activity.dateLabel ?? formatDateLabel(date);
+
+  return {
+    id: activity.id,
+    title: activity.title,
+    date,
+    dateLabel,
+    year,
+    category: activity.category,
+    content: activity.content ?? "",
+    imageUrls: Array.isArray(activity.imageUrls) ? activity.imageUrls : [],
+  };
 };
 
 export default function AdminActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Activity>(emptyDraft);
+  const [imageUrlsInput, setImageUrlsInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -33,13 +111,13 @@ export default function AdminActivitiesPage() {
     [activities, selectedId],
   );
 
+  const previewDateLabel = useMemo(() => formatDateLabel(draft.date), [draft.date]);
+  const previewYear = useMemo(() => extractYear(draft.date), [draft.date]);
+
   const isFormValid = useMemo(
     () =>
       draft.title.trim().length > 0 &&
-      draft.dateLabel.trim().length > 0 &&
-      Number.isInteger(draft.year) &&
-      draft.year >= 1900 &&
-      draft.year <= 2100 &&
+      /^\d{4}-\d{2}-\d{2}$/.test(draft.date) &&
       draft.category.trim().length > 0,
     [draft],
   );
@@ -49,17 +127,21 @@ export default function AdminActivitiesPage() {
       try {
         const res = await fetch("/api/admin/activities");
         if (!res.ok) {
-          throw new Error("활동 목록을 불러오지 못했습니다.");
+          throw new Error("Failed to load activities.");
         }
-        const data = (await res.json()) as { activities: Activity[] };
-        const next = data.activities ?? [];
+
+        const data = (await res.json()) as { activities?: ActivityFromApi[] };
+        const next = (data.activities ?? []).map((activity) =>
+          normalizeActivity(activity),
+        );
         setActivities(next);
+
         if (next.length > 0) {
           setSelectedId(next[0].id);
         }
       } catch (error) {
         setMessage(
-          error instanceof Error ? error.message : "불러오기에 실패했습니다.",
+          error instanceof Error ? error.message : "Failed to load activities.",
         );
       }
     };
@@ -70,35 +152,47 @@ export default function AdminActivitiesPage() {
   useEffect(() => {
     if (selected) {
       setDraft(selected);
+      setImageUrlsInput(selected.imageUrls.join("\n"));
     }
   }, [selected]);
+
+  const buildPayload = () => ({
+    title: draft.title,
+    date: draft.date,
+    category: draft.category,
+    content: draft.content,
+    imageUrls: parseImageUrls(imageUrlsInput),
+  });
 
   const handleSave = async () => {
     setIsLoading(true);
     setMessage(null);
+
     try {
       const res = await fetch(`/api/admin/activities/${draft.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: draft.title,
-          dateLabel: draft.dateLabel,
-          year: draft.year,
-          category: draft.category,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
+
       if (!res.ok) {
-        throw new Error("활동 저장에 실패했습니다.");
+        const payload = (await res.json().catch(() => null)) as
+          | { message?: string }
+          | null;
+        throw new Error(payload?.message ?? "Failed to update activity.");
       }
-      const data = (await res.json()) as { activity: Activity };
+
+      const data = (await res.json()) as { activity: ActivityFromApi };
+      const nextActivity = normalizeActivity(data.activity);
+
       setActivities((prev) =>
-        prev.map((item) =>
-          item.id === data.activity.id ? data.activity : item,
-        ),
+        prev.map((item) => (item.id === nextActivity.id ? nextActivity : item)),
       );
-      setMessage("저장 완료");
+      setDraft(nextActivity);
+      setImageUrlsInput(nextActivity.imageUrls.join("\n"));
+      setMessage("Updated.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "저장 실패");
+      setMessage(error instanceof Error ? error.message : "Failed to update.");
     } finally {
       setIsLoading(false);
     }
@@ -107,26 +201,31 @@ export default function AdminActivitiesPage() {
   const handleCreate = async () => {
     setIsLoading(true);
     setMessage(null);
+
     try {
       const res = await fetch("/api/admin/activities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: draft.title,
-          dateLabel: draft.dateLabel,
-          year: draft.year,
-          category: draft.category,
-        }),
+        body: JSON.stringify(buildPayload()),
       });
+
       if (!res.ok) {
-        throw new Error("활동 생성에 실패했습니다.");
+        const payload = (await res.json().catch(() => null)) as
+          | { message?: string }
+          | null;
+        throw new Error(payload?.message ?? "Failed to create activity.");
       }
-      const data = (await res.json()) as { activity: Activity };
-      setActivities((prev) => [data.activity, ...prev]);
-      setSelectedId(data.activity.id);
-      setMessage("생성 완료");
+
+      const data = (await res.json()) as { activity: ActivityFromApi };
+      const nextActivity = normalizeActivity(data.activity);
+
+      setActivities((prev) => [nextActivity, ...prev]);
+      setSelectedId(nextActivity.id);
+      setDraft(nextActivity);
+      setImageUrlsInput(nextActivity.imageUrls.join("\n"));
+      setMessage("Created.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "생성 실패");
+      setMessage(error instanceof Error ? error.message : "Failed to create.");
     } finally {
       setIsLoading(false);
     }
@@ -139,6 +238,7 @@ export default function AdminActivitiesPage() {
 
     setIsLoading(true);
     setMessage(null);
+
     try {
       const res = await fetch(`/api/admin/activities/${selectedId}`, {
         method: "DELETE",
@@ -148,38 +248,49 @@ export default function AdminActivitiesPage() {
         const errorPayload = (await res.json().catch(() => null)) as
           | { message?: string }
           | null;
-        throw new Error(errorPayload?.message ?? "활동 삭제에 실패했습니다.");
+        throw new Error(errorPayload?.message ?? "Failed to delete activity.");
       }
 
       const nextActivities = activities.filter((item) => item.id !== selectedId);
       setActivities(nextActivities);
 
       if (nextActivities.length > 0) {
-        setSelectedId(nextActivities[0].id);
-        setDraft(nextActivities[0]);
+        const next = nextActivities[0];
+        setSelectedId(next.id);
+        setDraft(next);
+        setImageUrlsInput(next.imageUrls.join("\n"));
       } else {
+        const nextDate = toDateInputValue(new Date());
         setSelectedId(null);
         setDraft({
           ...emptyDraft,
-          year: new Date().getFullYear(),
+          date: nextDate,
+          dateLabel: formatDateLabel(nextDate),
+          year: extractYear(nextDate),
         });
+        setImageUrlsInput("");
       }
 
       setIsDeleteModalOpen(false);
-      setMessage("삭제 완료");
+      setMessage("Deleted.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "삭제 실패");
+      setMessage(error instanceof Error ? error.message : "Failed to delete.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleNew = () => {
+    const nextDate = toDateInputValue(new Date());
+
     setSelectedId(null);
     setDraft({
       ...emptyDraft,
-      year: new Date().getFullYear(),
+      date: nextDate,
+      dateLabel: formatDateLabel(nextDate),
+      year: extractYear(nextDate),
     });
+    setImageUrlsInput("");
     setMessage(null);
   };
 
@@ -187,6 +298,7 @@ export default function AdminActivitiesPage() {
     if (!selectedId || isLoading) {
       return;
     }
+
     setIsDeleteModalOpen(true);
   };
 
@@ -194,6 +306,7 @@ export default function AdminActivitiesPage() {
     if (isLoading) {
       return;
     }
+
     setIsDeleteModalOpen(false);
   };
 
@@ -206,13 +319,13 @@ export default function AdminActivitiesPage() {
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-[11px] uppercase tracking-[0.35em] text-white/50">
-                활동
+                Activities
               </p>
               <h1 className="mt-2 font-[var(--font-display)] text-2xl uppercase tracking-[0.18em] text-white">
-                활동 관리
+                Activity Manager
               </h1>
               <p className="mt-2 text-sm text-white/60">
-                activities 페이지에서 사용할 활동을 생성/수정합니다.
+                Manage list and detail content for the Activities page.
               </p>
             </div>
             <button
@@ -220,7 +333,7 @@ export default function AdminActivitiesPage() {
               onClick={handleNew}
               className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-white/60 hover:border-white/35 hover:text-white"
             >
-              + 새 활동
+              + New Activity
             </button>
           </header>
 
@@ -228,9 +341,9 @@ export default function AdminActivitiesPage() {
             <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
-                  활동
+                  Activities
                 </p>
-                <span className="text-sm text-white/70">{activities.length}개</span>
+                <span className="text-sm text-white/70">{activities.length}</span>
               </div>
 
               <div className="mt-6 space-y-3">
@@ -266,17 +379,17 @@ export default function AdminActivitiesPage() {
             <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
-                  편집
+                  Editor
                 </p>
                 <span className="text-[11px] text-white/40">
-                  {selectedId ? "수정" : "추가"}
+                  {selectedId ? "Edit" : "Create"}
                 </span>
               </div>
 
               <form className="mt-6 space-y-4">
                 <label className="block">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    제목
+                    Title
                   </span>
                   <input
                     type="text"
@@ -293,46 +406,31 @@ export default function AdminActivitiesPage() {
 
                 <label className="block">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    날짜 라벨
+                    Date
                   </span>
-                  <p className="mt-2 text-[10px] uppercase tracking-[0.28em] text-white/40">
-                    ex) MAR 01
+                  <input
+                    type="date"
+                    value={draft.date}
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        date: event.target.value,
+                      }))
+                    }
+                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
+                  />
+                </label>
+
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[11px] text-white/70">
+                  <p className="uppercase tracking-[0.2em] text-white/45">Auto Generated</p>
+                  <p className="mt-1">
+                    {previewDateLabel || "-"} / {previewYear}
                   </p>
-                  <input
-                    type="text"
-                    value={draft.dateLabel}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        dateLabel: event.target.value,
-                      }))
-                    }
-                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
-                  />
-                </label>
+                </div>
 
                 <label className="block">
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    연도
-                  </span>
-                  <input
-                    type="number"
-                    min={1900}
-                    max={2100}
-                    value={draft.year}
-                    onChange={(event) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        year: Number.parseInt(event.target.value, 10) || 0,
-                      }))
-                    }
-                    className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 focus:border-white/30 focus:outline-none"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
-                    카테고리
+                    Category
                   </span>
                   <input
                     type="text"
@@ -347,6 +445,40 @@ export default function AdminActivitiesPage() {
                   />
                 </label>
 
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                    Content
+                  </span>
+                  <textarea
+                    value={draft.content}
+                    onChange={(event) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        content: event.target.value,
+                      }))
+                    }
+                    rows={6}
+                    className="mt-2 w-full rounded-2xl border border-white/10 bg-[#0f1210] px-4 py-3 text-sm text-white/80 focus:border-white/30 focus:outline-none"
+                    placeholder="Write detail text shown in activity detail page"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
+                    Gallery Image URLs
+                  </span>
+                  <p className="mt-2 text-[10px] text-white/40">
+                    One URL per line, up to 24 images.
+                  </p>
+                  <textarea
+                    value={imageUrlsInput}
+                    onChange={(event) => setImageUrlsInput(event.target.value)}
+                    rows={5}
+                    className="mt-2 w-full rounded-2xl border border-white/10 bg-[#0f1210] px-4 py-3 text-sm text-white/80 focus:border-white/30 focus:outline-none"
+                    placeholder="https://example.com/a.jpg\nhttps://example.com/b.jpg"
+                  />
+                </label>
+
                 {message && (
                   <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] text-white/60">
                     {message}
@@ -354,7 +486,7 @@ export default function AdminActivitiesPage() {
                 )}
                 {!isFormValid && (
                   <p className="rounded-2xl border border-amber-300/20 bg-amber-200/10 px-4 py-2 text-[11px] text-amber-100/80">
-                    모든 항목을 입력하고 연도는 1900~2100 사이여야 합니다.
+                    Fill in title/date/category first.
                   </p>
                 )}
 
@@ -364,7 +496,7 @@ export default function AdminActivitiesPage() {
                   disabled={isLoading || !isFormValid}
                   className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-full border border-white/15 bg-white/5 text-xs uppercase tracking-[0.28em] text-white/60 transition hover:border-white/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {selectedId ? "저장" : "추가"}
+                  {selectedId ? "Save" : "Create"}
                 </button>
 
                 {selectedId && (
@@ -374,7 +506,7 @@ export default function AdminActivitiesPage() {
                     disabled={isLoading}
                     className="inline-flex h-11 w-full items-center justify-center rounded-full border border-rose-300/30 bg-rose-400/10 text-xs uppercase tracking-[0.28em] text-rose-100/80 transition hover:border-rose-200/50 hover:bg-rose-400/20 hover:text-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    활동 삭제
+                    Delete
                   </button>
                 )}
               </form>
@@ -385,19 +517,19 @@ export default function AdminActivitiesPage() {
       <ConfirmDangerModal
         open={isDeleteModalOpen && !!selectedId}
         isLoading={isLoading}
-        title="활동을 삭제하시겠습니까?"
+        title="Delete this activity?"
         description={
           selectedId ? (
             <>
               <strong className="font-semibold text-[#ff4d4d]">
                 {activities.find((item) => item.id === selectedId)?.title ??
-                  "선택한 활동"}
+                  "Selected activity"}
               </strong>{" "}
-              항목이 영구적으로 삭제됩니다.
+              will be permanently removed.
             </>
           ) : null
         }
-        warningText="삭제된 데이터는 복구할 수 없습니다. 신중하게 선택해 주세요."
+        warningText="Deleted data cannot be recovered. Please confirm carefully."
         onClose={closeDeleteModal}
         onConfirm={handleDelete}
       />

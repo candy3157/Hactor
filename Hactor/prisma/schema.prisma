@@ -36,14 +36,33 @@ model AdminSession {
 model Activity {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title     String
+  date      DateTime @db.Date
   dateLabel String   @map("date_label")
   year      Int
   category  String
+  content   String?  @db.Text
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  images    ActivityImage[]
+
   @@index([year])
+  @@index([date])
   @@map("activities")
+}
+
+model ActivityImage {
+  id         Int      @id @default(autoincrement())
+  activityId String   @db.Uuid @map("activity_id")
+  imageUrl   String   @map("image_url")
+  caption    String?
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([activityId, sortOrder])
+  @@map("activity_images")
 }
 
 model Member {

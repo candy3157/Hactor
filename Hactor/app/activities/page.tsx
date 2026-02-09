@@ -26,10 +26,12 @@ export const revalidate = 60;
 
 export default async function ActivitiesPage() {
   const activities = await prisma.activity.findMany({
-    orderBy: [{ year: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
 
   const activityRows = activities.map((activity) => ({
+    id: activity.id,
+    date: activity.date.toISOString(),
     title: activity.title,
     dateLabel: activity.dateLabel,
     year: activity.year,
