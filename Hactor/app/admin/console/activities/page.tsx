@@ -111,7 +111,10 @@ export default function AdminActivitiesPage() {
     [activities, selectedId],
   );
 
-  const previewDateLabel = useMemo(() => formatDateLabel(draft.date), [draft.date]);
+  const previewDateLabel = useMemo(
+    () => formatDateLabel(draft.date),
+    [draft.date],
+  );
   const previewYear = useMemo(() => extractYear(draft.date), [draft.date]);
 
   const isFormValid = useMemo(
@@ -176,9 +179,9 @@ export default function AdminActivitiesPage() {
       });
 
       if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as
-          | { message?: string }
-          | null;
+        const payload = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
         throw new Error(payload?.message ?? "Failed to update activity.");
       }
 
@@ -210,9 +213,9 @@ export default function AdminActivitiesPage() {
       });
 
       if (!res.ok) {
-        const payload = (await res.json().catch(() => null)) as
-          | { message?: string }
-          | null;
+        const payload = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
         throw new Error(payload?.message ?? "Failed to create activity.");
       }
 
@@ -245,13 +248,15 @@ export default function AdminActivitiesPage() {
       });
 
       if (!res.ok) {
-        const errorPayload = (await res.json().catch(() => null)) as
-          | { message?: string }
-          | null;
+        const errorPayload = (await res.json().catch(() => null)) as {
+          message?: string;
+        } | null;
         throw new Error(errorPayload?.message ?? "Failed to delete activity.");
       }
 
-      const nextActivities = activities.filter((item) => item.id !== selectedId);
+      const nextActivities = activities.filter(
+        (item) => item.id !== selectedId,
+      );
       setActivities(nextActivities);
 
       if (nextActivities.length > 0) {
@@ -343,7 +348,9 @@ export default function AdminActivitiesPage() {
                 <p className="text-[11px] uppercase tracking-[0.3em] text-white/60">
                   Activities
                 </p>
-                <span className="text-sm text-white/70">{activities.length}</span>
+                <span className="text-sm text-white/70">
+                  {activities.length}
+                </span>
               </div>
 
               <div className="mt-6 space-y-3">
@@ -422,7 +429,9 @@ export default function AdminActivitiesPage() {
                 </label>
 
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[11px] text-white/70">
-                  <p className="uppercase tracking-[0.2em] text-white/45">Auto Generated</p>
+                  <p className="uppercase tracking-[0.2em] text-white/45">
+                    Auto Generated
+                  </p>
                   <p className="mt-1">
                     {previewDateLabel || "-"} / {previewYear}
                   </p>
@@ -467,15 +476,18 @@ export default function AdminActivitiesPage() {
                   <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
                     Gallery Image URLs
                   </span>
-                  <p className="mt-2 text-[10px] text-white/40">
-                    One URL per line, up to 24 images.
+                  <p className="mt-2 text-[10px] leading-5 text-white/40">
+                    이미지 URL을 입력해주세요.(Supabase Storage에 이미지를
+                    업로드 하면 URL을 얻을 수 있습니다)
                   </p>
                   <textarea
                     value={imageUrlsInput}
                     onChange={(event) => setImageUrlsInput(event.target.value)}
                     rows={5}
                     className="mt-2 w-full rounded-2xl border border-white/10 bg-[#0f1210] px-4 py-3 text-sm text-white/80 focus:border-white/30 focus:outline-none"
-                    placeholder="https://example.com/a.jpg\nhttps://example.com/b.jpg"
+                    placeholder={`https://example.com/a.jpg
+https://example.com/b.png
+https://example.com/c.webp`}
                   />
                 </label>
 

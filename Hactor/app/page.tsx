@@ -5,7 +5,7 @@ import LoadingNavButton from "./components/main/LoadingNavButton";
 import MembersMarquee from "./components/main/members/MembersMarquee";
 import TypingText from "./components/TypingText";
 import { activityCatalog } from "./data/activities";
-import { members } from "./data/members";
+import { getMarqueeMembers } from "@/lib/member-marquee";
 
 const display = localFont({
   src: [
@@ -49,7 +49,7 @@ const formatTimelineDate = (date: string) => {
   return [date.toUpperCase()];
 };
 
-const DISCORD_INVITE_URL = "#";
+const DISCORD_INVITE_URL = "https://discord.gg/hactor";
 
 const joinUsCards = [
   {
@@ -90,7 +90,17 @@ const joinUsFaq = [
   },
 ];
 
-export default function Home() {
+export const runtime = "nodejs";
+export const revalidate = 120;
+
+export default async function Home() {
+  let members: Awaited<ReturnType<typeof getMarqueeMembers>> = [];
+  try {
+    members = await getMarqueeMembers();
+  } catch (error) {
+    console.error("Failed to load marquee members from DB:", error);
+  }
+
   return (
     <div
       className={`${display.variable} ${body.variable} relative min-h-screen overflow-hidden bg-gradient-to-br from-[#1a2a1a] via-[#132313] to-[#0f1f0f] text-white`}
@@ -102,7 +112,7 @@ export default function Home() {
             <div className="max-w-[300px] font-[var(--font-body)]">
               <p className="text-[10px] uppercase tracking-[0.35em] text-white/55">
                 <span className="block">Dept. of Information Security,</span>
-                <span className="block">Deajeon University</span>
+                <span className="block">Daejeon University</span>
               </p>
               <h1 className="mt-2 font-[var(--font-display)] text-3xl uppercase tracking-[0.18em] text-white">
                 HACTOR
@@ -132,7 +142,7 @@ export default function Home() {
 
           <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-          <section className="mt-8 space-y-4 text-left">
+          <section id="about" className="mt-8 space-y-4 scroll-mt-24 text-left">
             <div>
               <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
                 About
@@ -148,7 +158,10 @@ export default function Home() {
 
           <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-          <section className="mt-8 space-y-5 text-center">
+          <section
+            id="members"
+            className="mt-8 space-y-5 scroll-mt-24 text-center"
+          >
             <div>
               <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
                 Crews
@@ -170,7 +183,10 @@ export default function Home() {
 
           <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-          <section className="mt-8 space-y-4 text-left">
+          <section
+            id="activities"
+            className="mt-8 space-y-4 scroll-mt-24 text-left"
+          >
             <div className="flex items-center justify-between">
               <div>
                 <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
@@ -300,22 +316,24 @@ export default function Home() {
 
           <div className="mt-8 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-          <section id="join-us" className="mt-8 space-y-5 scroll-mt-24 text-left">
+          <section
+            id="join-us"
+            className="mt-8 space-y-5 scroll-mt-24 text-left"
+          >
             <div className="text-center">
               <span className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[10px] uppercase tracking-[0.32em] text-white/70">
                 Join Us
               </span>
             </div>
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[linear-gradient(160deg,rgba(20,27,24,0.82)_0%,rgba(16,20,23,0.84)_55%,rgba(12,15,18,0.88)_100%)] p-6 [box-shadow:0_22px_48px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md sm:p-9">
-              <div className="pointer-events-none absolute -left-12 -top-24 h-56 w-56 rounded-full bg-emerald-300/10 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-20 right-0 h-52 w-52 rounded-full bg-indigo-400/10 blur-3xl" />
-
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 p-6 [box-shadow:0_22px_48px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md sm:p-9">
               <div className="text-center">
                 <h2 className="bg-gradient-to-r from-emerald-200 via-indigo-200 to-violet-200 bg-clip-text font-[var(--font-display)] text-3xl tracking-[0.08em] text-transparent sm:text-4xl">
                   함께 성장할 동료를 찾습니다
                 </h2>
-                <p className="mt-4 text-lg text-white/78">초보자도 환영합니다</p>
+                <p className="mt-4 text-lg text-white/78">
+                  초보자도 환영합니다
+                </p>
                 <p className="mt-1 text-sm text-white/55">
                   열정과 호기심만 있다면 충분합니다
                 </p>
@@ -331,7 +349,9 @@ export default function Home() {
                     <h3 className="mt-3 text-base font-semibold text-white/90">
                       {card.title}
                     </h3>
-                    <p className="mt-2 text-sm text-white/65">{card.description}</p>
+                    <p className="mt-2 text-sm text-white/65">
+                      {card.description}
+                    </p>
                     <p className="text-sm text-white/65">{card.description2}</p>
                   </article>
                 ))}
@@ -388,6 +408,101 @@ export default function Home() {
               </div>
             </div>
           </section>
+
+          <footer className="mt-12 rounded-3xl border border-white/5 px-8 py-10">
+            <div className="mx-auto max-w-4xl">
+              <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
+                <div className="text-center md:text-left">
+                  <h3 className="text-sm font-medium tracking-wide text-white/70">
+                    HACTOR <span className="text-white/30">·</span>{" "}
+                    <span className="text-white/50">DAEJEON UNIVERSITY</span>
+                  </h3>
+                </div>
+
+                <div className="flex gap-3">
+                  <a
+                    href={DISCORD_INVITE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Discord"
+                    className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-all hover:border-green-500/50 hover:bg-white/10"
+                  >
+                    <svg
+                      className="h-4 w-4 text-white/60 transition-colors group-hover:text-green-400"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
+                    </svg>
+                    <span className="sr-only">Discord</span>
+                  </a>
+
+                  <a
+                    href="mailto:hactor@example.com"
+                    aria-label="Email"
+                    className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-all hover:border-green-500/50 hover:bg-white/10"
+                  >
+                    <svg
+                      className="h-4 w-4 text-white/60 transition-colors group-hover:text-green-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                    <span className="sr-only">Email</span>
+                  </a>
+
+                  <a
+                    href="https://github.com/hactor"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="GitHub"
+                    className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-all hover:border-green-500/50 hover:bg-white/10"
+                  >
+                    <svg
+                      className="h-4 w-4 text-white/60 transition-colors group-hover:text-green-400"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+                    </svg>
+                    <span className="sr-only">GitHub</span>
+                  </a>
+
+                  <a
+                    href="https://open.kakao.com/o/hactor"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="KakaoTalk OpenChat"
+                    className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-all hover:border-green-500/50 hover:bg-white/10"
+                  >
+                    <svg
+                      className="h-4 w-4 text-white/60 transition-colors group-hover:text-green-400"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3z" />
+                    </svg>
+                    <span className="sr-only">KakaoTalk OpenChat</span>
+                  </a>
+                </div>
+
+                <div className="text-center md:text-right">
+                  <p className="text-xs text-white/40">© 2026 HACTOR</p>
+                </div>
+              </div>
+            </div>
+          </footer>
         </main>
       </div>
     </div>

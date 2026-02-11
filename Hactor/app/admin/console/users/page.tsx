@@ -63,6 +63,7 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [joinDate, setJoinDate] = useState<Date | null>(null);
+  const [fieldQuery, setFieldQuery] = useState("");
 
   const selectedMember = useMemo(
     () => members.find((member) => member.id === selectedId) ?? null,
@@ -73,6 +74,16 @@ export default function AdminUsersPage() {
     () => draft.displayName.trim().length > 0,
     [draft.displayName],
   );
+  const filteredFields = useMemo(() => {
+    const query = fieldQuery.trim().toLowerCase();
+    if (!query) {
+      return fields;
+    }
+    return fields.filter((field) => {
+      const source = `${field.label} ${field.code}`.toLowerCase();
+      return source.includes(query);
+    });
+  }, [fields, fieldQuery]);
 
   useEffect(() => {
     const load = async () => {
@@ -106,6 +117,7 @@ export default function AdminUsersPage() {
         ? new Date(selectedMember.discordJoinedAt)
         : null,
     );
+    setFieldQuery("");
   }, [selectedMember]);
 
   const toggleField = (fieldId: number) => {
@@ -360,27 +372,109 @@ export default function AdminUsersPage() {
                     <span className="text-[10px] uppercase tracking-[0.3em] text-white/60">
                       활동 분야
                     </span>
-                    <div className="mt-3 grid gap-2">
-                      {fields.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-4 py-3 text-center text-[11px] text-white/50">
-                          등록된 활동 분야가 없습니다.
-                        </div>
-                      ) : (
-                        fields.map((field) => (
-                          <label
-                            key={field.id}
-                            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[11px] uppercase tracking-[0.2em] text-white/70"
+                    <p className="mt-2 text-[11px] text-white/45">
+                      미선택 가능
+                    </p>
+                    <div className="mt-3 rounded-2xl border border-white/10 bg-[rgba(15,18,22,0.78)] p-3 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)]">
+                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] px-3 py-2">
+                        <svg
+                          className="h-4 w-4 shrink-0 text-white/35"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                        <input
+                          type="text"
+                          value={fieldQuery}
+                          onChange={(event) => setFieldQuery(event.target.value)}
+                          placeholder="활동 분야 검색"
+                          className="h-7 w-full bg-transparent text-sm text-white/80 placeholder:text-white/35 focus:outline-none"
+                        />
+                        {fieldQuery ? (
+                          <button
+                            type="button"
+                            onClick={() => setFieldQuery("")}
+                            className="text-xs font-medium text-emerald-300/85 hover:text-emerald-200"
                           >
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4"
-                              checked={draft.fieldIds.includes(field.id)}
-                              onChange={() => toggleField(field.id)}
-                            />
-                            <span>{field.label}</span>
-                          </label>
-                        ))
-                      )}
+                            Cancel
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-3 rounded-md border border-white/10 bg-[rgba(255,255,255,0.05)] px-3 py-2 text-xs font-medium text-white/45">
+                        Matching fields
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {fields.length === 0 ? (
+                          <div className="w-full rounded-xl border border-dashed border-white/15 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-center text-[11px] text-white/50">
+                            등록된 활동 분야가 없습니다.
+                          </div>
+                        ) : filteredFields.length === 0 ? (
+                          <div className="w-full rounded-xl border border-dashed border-white/15 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-center text-[11px] text-white/50">
+                            검색 결과가 없습니다.
+                          </div>
+                        ) : (
+                          filteredFields.map((field) => {
+                            const selected = draft.fieldIds.includes(field.id);
+                            return (
+                              <button
+                                key={field.id}
+                                type="button"
+                                onClick={() => toggleField(field.id)}
+                                aria-pressed={selected}
+                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+                                  selected
+                                    ? "border-emerald-300/45 bg-emerald-500/20 text-emerald-100 shadow-[0_6px_18px_rgba(16,185,129,0.22)]"
+                                    : "border-white/15 bg-[rgba(255,255,255,0.06)] text-white/80 hover:border-white/30 hover:bg-[rgba(255,255,255,0.1)]"
+                                }`}
+                              >
+                                <span>{field.label}</span>
+                                <span className="inline-flex h-4 w-4 items-center justify-center leading-none">
+                                  {selected ? (
+                                    <svg
+                                      className="h-3.5 w-3.5"
+                                      viewBox="0 0 16 16"
+                                      fill="none"
+                                      aria-hidden="true"
+                                    >
+                                      <path
+                                        d="M3.5 8.2 6.6 11.3 12.5 5.4"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  ) : (
+                                    <span className="text-base leading-none">+</span>
+                                  )}
+                                </span>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-2 text-[11px] text-white/45">
+                      선택됨: {draft.fieldIds.length}개
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setDraft((prev) => ({ ...prev, fieldIds: [] }))}
+                        className="text-[11px] font-medium text-white/55 underline-offset-2 transition hover:text-white/80 hover:underline"
+                      >
+                        모두 해제
+                      </button>
                     </div>
                   </label>
 
@@ -521,3 +615,4 @@ export default function AdminUsersPage() {
     </div>
   );
 }
+
