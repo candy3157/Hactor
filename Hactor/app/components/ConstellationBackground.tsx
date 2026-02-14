@@ -1,168 +1,189 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
-const PARTICLE_COUNT = 110;
-const CONNECTION_DISTANCE = 150;
-
-type Bounds = {
-  width: number;
-  height: number;
-};
-
-class Dot {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  getBounds: () => Bounds;
-
-  constructor(getBounds: () => Bounds) {
-    const { width, height } = getBounds();
-    this.x = Math.random() * width;
-    this.y = Math.random() * height;
-    this.vx = (Math.random() - 0.5) * 0.3;
-    this.vy = (Math.random() - 0.5) * 0.3;
-    this.size = Math.random() * 2 + 1;
-    this.getBounds = getBounds;
-  }
-
-  update() {
-    const { width, height } = this.getBounds();
-    this.x += this.vx;
-    this.y += this.vy;
-
-    if (this.x < 0) this.x = width;
-    if (this.x > width) this.x = 0;
-    if (this.y < 0) this.y = height;
-    if (this.y > height) this.y = 0;
-  }
-
-  draw(ctx: CanvasRenderingContext2D) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(200, 220, 200, 0.7)";
-    ctx.fill();
-  }
-}
-
 export default function ConstellationBackground() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  return (
+    <>
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="terminal-base" />
+        <div className="terminal-noise" />
+        <div className="terminal-scanlines" />
+        <div className="terminal-vignette" />
+      </div>
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      <style jsx>{`
+        .terminal-base {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            135deg,
+            #1a2a1a 0%,
+            #132313 50%,
+            #0f1f0f 100%
+          );
+        }
 
-    let width = 0;
-    let height = 0;
-    let animationId = 0;
-    let particles: Dot[] = [];
-    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+        .terminal-noise {
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+          opacity: 0.45;
+          animation: noise-shift 0.2s infinite;
+        }
 
-    const mouse = { x: -9999, y: -9999, radius: 140 };
-
-    const resize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    const getBounds = () => ({ width, height });
-
-    const init = () => {
-      particles = [];
-      for (let i = 0; i < PARTICLE_COUNT; i += 1) {
-        particles.push(new Dot(getBounds));
-      }
-    };
-
-    const connect = () => {
-      for (let i = 0; i < particles.length; i += 1) {
-        for (let j = i + 1; j < particles.length; j += 1) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.hypot(dx, dy);
-
-          if (distance < CONNECTION_DISTANCE) {
-            const opacity = (1 - distance / CONNECTION_DISTANCE) * 0.35;
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(180, 200, 180, ${opacity})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
+        @keyframes noise-shift {
+          0% {
+            transform: translate(0, 0);
+          }
+          10% {
+            transform: translate(-1px, -1px);
+          }
+          20% {
+            transform: translate(1px, 1px);
+          }
+          30% {
+            transform: translate(-1px, 1px);
+          }
+          40% {
+            transform: translate(1px, -1px);
+          }
+          50% {
+            transform: translate(0, 0);
+          }
+          60% {
+            transform: translate(1px, 1px);
+          }
+          70% {
+            transform: translate(-1px, -1px);
+          }
+          80% {
+            transform: translate(1px, -1px);
+          }
+          90% {
+            transform: translate(-1px, 1px);
+          }
+          100% {
+            transform: translate(0, 0);
           }
         }
-      }
-    };
 
-    const animate = () => {
-      ctx.clearRect(0, 0, width, height);
-      particles.forEach((p) => {
-        p.update();
-        p.draw(ctx);
-      });
-      connect();
+        .terminal-scanlines {
+          position: absolute;
+          inset: 0;
+          background: repeating-linear-gradient(
+            0deg,
+            rgba(110, 231, 183, 0.03) 0px,
+            rgba(110, 231, 183, 0.03) 1px,
+            transparent 1px,
+            transparent 2px
+          );
+          animation: scanline-scroll 12s linear infinite;
+        }
 
-      if (mouse.x > -1) {
-        particles.forEach((p) => {
-          const dx = p.x - mouse.x;
-          const dy = p.y - mouse.y;
-          const dist = Math.hypot(dx, dy);
-          if (dist < mouse.radius) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(mouse.x, mouse.y);
-            ctx.strokeStyle = `rgba(200, 220, 200, ${
-              (1 - dist / mouse.radius) * 0.4
-            })`;
-            ctx.lineWidth = 0.4;
-            ctx.stroke();
+        @keyframes scanline-scroll {
+          0% {
+            transform: translateY(0);
           }
-        });
-      }
+          100% {
+            transform: translateY(2px);
+          }
+        }
 
-      animationId = window.requestAnimationFrame(animate);
-    };
+        .terminal-scanlines::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: repeating-linear-gradient(
+            90deg,
+            rgba(110, 231, 183, 0.018) 0px,
+            rgba(110, 231, 183, 0.018) 1px,
+            transparent 1px,
+            transparent 3px
+          );
+        }
 
-    const handleMove = (event: MouseEvent) => {
-      mouse.x = event.clientX;
-      mouse.y = event.clientY;
-    };
+        .terminal-scanlines::after {
+          content: "";
+          position: absolute;
+          top: -50%;
+          left: 0;
+          right: 0;
+          height: 20%;
+          background: linear-gradient(
+            180deg,
+            transparent 0%,
+            rgba(110, 231, 183, 0.055) 50%,
+            transparent 100%
+          );
+          animation: scan-move 8s linear infinite;
+        }
 
-    const handleLeave = () => {
-      mouse.x = -9999;
-      mouse.y = -9999;
-    };
+        @keyframes scan-move {
+          0% {
+            top: -20%;
+          }
+          100% {
+            top: 100%;
+          }
+        }
 
-    resize();
-    init();
-    animate();
+        .terminal-vignette {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            ellipse at center,
+            transparent 0%,
+            transparent 50%,
+            rgba(0, 0, 0, 0.28) 80%,
+            rgba(0, 0, 0, 0.55) 100%
+          );
+        }
 
-    window.addEventListener("resize", resize);
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("mouseleave", handleLeave);
+        .terminal-vignette::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 320px;
+          height: 320px;
+          background: radial-gradient(
+            circle at top left,
+            rgba(110, 231, 183, 0.08) 0%,
+            transparent 72%
+          );
+        }
 
-    return () => {
-      window.cancelAnimationFrame(animationId);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseleave", handleLeave);
-    };
-  }, []);
+        .terminal-vignette::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 320px;
+          height: 320px;
+          background: radial-gradient(
+            circle at bottom right,
+            rgba(74, 222, 128, 0.06) 0%,
+            transparent 72%
+          );
+        }
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0"
-    />
+        @media (max-width: 768px) {
+          .terminal-noise {
+            animation: none;
+          }
+
+          .terminal-scanlines::after {
+            animation-duration: 10s;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .terminal-noise,
+          .terminal-scanlines,
+          .terminal-scanlines::after {
+            animation: none;
+          }
+        }
+      `}</style>
+    </>
   );
 }

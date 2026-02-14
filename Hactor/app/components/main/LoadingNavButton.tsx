@@ -11,11 +11,11 @@ type LoadingNavButtonProps = {
 };
 
 const baseStyle =
-  "inline-flex items-center justify-center gap-2 transition-colors duration-200 disabled:cursor-not-allowed";
+  "group inline-flex items-center justify-center gap-2 transition-colors duration-200 disabled:cursor-not-allowed";
 
 const variantStyle = {
   pill:
-    "min-w-[88px] rounded-full border border-white/20 bg-[rgba(255,255,255,0.02)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/60 hover:border-white/30 hover:text-white/85 disabled:opacity-70",
+    "min-w-[132px] rounded-full border border-white/20 bg-[rgba(255,255,255,0.02)] px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 hover:border-white/35 hover:text-white disabled:opacity-70",
   text:
     "min-w-[126px] text-[10px] uppercase tracking-[0.28em] text-white/45 hover:text-white/80 disabled:opacity-70",
 } as const;
@@ -49,7 +49,19 @@ export default function LoadingNavButton({
           className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
         />
       )}
-      <span>{isLoading ? loadingLabel : label}</span>
+      <span className="inline-flex items-center">
+        <span>{isLoading ? loadingLabel : label}</span>
+        <span
+          aria-hidden="true"
+          className={`ml-0 w-0 overflow-hidden whitespace-nowrap transition-all duration-200 ${
+            isLoading
+              ? "opacity-0"
+              : "opacity-0 group-hover:ml-1.5 group-hover:w-3 group-hover:opacity-100"
+          }`}
+        >
+          →
+        </span>
+      </span>
     </button>
   );
 }
