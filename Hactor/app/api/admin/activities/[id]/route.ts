@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -170,6 +171,16 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireSameOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { id } = await context.params;
   let payload: ActivityPayload | null = null;
 
@@ -322,9 +333,19 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireSameOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { id } = await context.params;
 
   if (!id) {

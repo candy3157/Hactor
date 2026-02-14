@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,16 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireSameOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ ok: false, message: "Missing id" }, { status: 400 });
@@ -99,9 +110,19 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
+  const originError = requireSameOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ ok: false, message: "Missing id" }, { status: 400 });

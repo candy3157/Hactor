@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -71,7 +72,12 @@ const ensureDefaultActivityFields = async () => {
   });
 };
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   await ensureDefaultActivityFields();
 
   const [members, fields] = await Promise.all([

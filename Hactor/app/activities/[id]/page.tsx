@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ConstellationBackground from "../../components/ConstellationBackground";
@@ -128,13 +129,17 @@ export default async function ActivityDetailPage({
                       <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">
                         Category
                       </p>
-                      <p className="text-lg text-white/90">{activity.category}</p>
+                      <p className="text-lg text-white/90">
+                        {activity.category}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <p className="text-[10px] uppercase tracking-[0.22em] text-white/45">
                         Date
                       </p>
-                      <p className="text-lg text-white/90">{activity.dateLabel}</p>
+                      <p className="text-lg text-white/90">
+                        {activity.dateLabel}
+                      </p>
                     </div>
                   </div>
                 </section>
@@ -163,7 +168,7 @@ export default async function ActivityDetailPage({
                       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                         {imageUrls.map((url, index) => (
                           <figure key={`${url}-${index}`} className="space-y-2">
-                            <img
+                            <Image
                               src={url}
                               alt={`${activity.title} image ${index + 1}`}
                               className="aspect-square w-full rounded-md border border-white/10 object-cover"
@@ -172,7 +177,8 @@ export default async function ActivityDetailPage({
                         ))}
                       </div>
                       <p className="mt-4 text-center text-xs text-white/45">
-                        {imageUrls.length} image{imageUrls.length > 1 ? "s" : ""}
+                        {imageUrls.length} image
+                        {imageUrls.length > 1 ? "s" : ""}
                       </p>
                     </>
                   ) : (

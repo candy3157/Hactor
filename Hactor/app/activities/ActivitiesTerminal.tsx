@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 type ActivityRow = {
   id: string;
@@ -22,6 +22,11 @@ type DirectoryState = { kind: "activities" } | { kind: "year"; year: number };
 
 const DEFAULT_YEARS = [2025, 2026];
 const ACTIVITY_RETURN_STATE_KEY = "activities:return-state";
+
+type RestoredState = {
+  currentDir: DirectoryState;
+  selectedActivityId: string | null;
+};
 
 const filterActivities = (activities: ActivityRow[], query: string) => {
   const normalized = query.trim().toLowerCase();
@@ -53,47 +58,64 @@ const compareActivitiesByDateDesc = (a: ActivityRow, b: ActivityRow) => {
   return a.title.localeCompare(b.title);
 };
 
+const restoreStateFromSession = (): RestoredState => {
+  const fallback: RestoredState = {
+    currentDir: { kind: "activities" },
+    selectedActivityId: null,
+  };
+
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  const rawState = window.sessionStorage.getItem(ACTIVITY_RETURN_STATE_KEY);
+  if (!rawState) {
+    return fallback;
+  }
+
+  window.sessionStorage.removeItem(ACTIVITY_RETURN_STATE_KEY);
+
+  try {
+    const parsed = JSON.parse(rawState) as {
+      year?: unknown;
+      selectedActivityId?: unknown;
+    };
+
+    const restoredDir: DirectoryState =
+      typeof parsed.year === "number" && Number.isInteger(parsed.year)
+        ? { kind: "year", year: parsed.year }
+        : fallback.currentDir;
+    const restoredSelectedId =
+      typeof parsed.selectedActivityId === "string"
+        ? parsed.selectedActivityId
+        : null;
+
+    return {
+      currentDir: restoredDir,
+      selectedActivityId: restoredSelectedId,
+    };
+  } catch {
+    // Ignore malformed state from session storage.
+    return fallback;
+  }
+};
+
 export default function ActivitiesTerminal({
   activities,
 }: ActivitiesTerminalProps) {
   const router = useRouter();
+  const [restoredState] = useState(restoreStateFromSession);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("icon");
-  const [currentDir, setCurrentDir] = useState<DirectoryState>({
-    kind: "activities",
-  });
+  const [currentDir, setCurrentDir] = useState<DirectoryState>(
+    restoredState.currentDir,
+  );
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    null,
+    restoredState.selectedActivityId,
   );
   const [pendingActivityId, setPendingActivityId] = useState<string | null>(
     null,
   );
-
-  useEffect(() => {
-    const rawState = window.sessionStorage.getItem(ACTIVITY_RETURN_STATE_KEY);
-    if (!rawState) {
-      return;
-    }
-
-    window.sessionStorage.removeItem(ACTIVITY_RETURN_STATE_KEY);
-
-    try {
-      const parsed = JSON.parse(rawState) as {
-        year?: unknown;
-        selectedActivityId?: unknown;
-      };
-
-      if (typeof parsed.year === "number" && Number.isInteger(parsed.year)) {
-        setCurrentDir({ kind: "year", year: parsed.year });
-      }
-
-      if (typeof parsed.selectedActivityId === "string") {
-        setSelectedActivityId(parsed.selectedActivityId);
-      }
-    } catch {
-      // Ignore malformed state from session storage.
-    }
-  }, []);
 
   const filteredActivities = useMemo(
     () => filterActivities(activities, query).sort(compareActivitiesByDateDesc),

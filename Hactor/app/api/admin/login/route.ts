@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireSameOrigin } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,11 @@ type LoginPayload = {
 };
 
 export async function POST(request: Request) {
+  const originError = requireSameOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
   let payload: LoginPayload | null = null;
 
   try {

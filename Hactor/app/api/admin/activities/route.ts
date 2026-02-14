@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
@@ -165,7 +166,12 @@ const serializeActivity = (activity: ActivityWithImages) => ({
   updatedAt: activity.updatedAt,
 });
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   const activities = await prisma.activity.findMany({
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     include: imagesInclude,
@@ -178,6 +184,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const originError = requireSameOrigin(request);
+  if (originError) {
+    return originError;
+  }
+
+  const auth = await requireAdminSession(request);
+  if (!auth.ok) {
+    return auth.response;
+  }
+
   let payload: ActivityPayload | null = null;
 
   try {
