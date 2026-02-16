@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
@@ -271,6 +272,9 @@ export async function POST(request: Request) {
     },
     include: imagesInclude,
   });
+
+  revalidatePath("/");
+  revalidatePath("/activities");
 
   return NextResponse.json(
     { ok: true, activity: serializeActivity(created) },

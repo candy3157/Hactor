@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import Link from "next/link";
+import { memberTagLabelFromField } from "@/app/data/members";
 import prisma from "@/lib/prisma";
 import ConstellationBackground from "../components/ConstellationBackground";
 import MembersTerminal from "./MembersTerminal";
@@ -54,7 +55,9 @@ export default async function MembersPage() {
 
   const memberRows = members.map((member) => {
     const activeFields = member.fields.filter((entry) => entry.field?.isActive);
-    const tags = activeFields.map((entry) => entry.field.label);
+    const tags = activeFields.map((entry) =>
+      memberTagLabelFromField(entry.field.code, entry.field.label),
+    );
 
     return {
       id: member.id,
@@ -64,7 +67,7 @@ export default async function MembersPage() {
       displayName: member.displayName,
       avatarUrl: member.avatarUrl,
       isActive: member.isActive,
-      memberActivityFields: member.fields.map((entry) => ({
+      memberActivityFields: activeFields.map((entry) => ({
         fieldId: entry.fieldId,
         code: entry.field.code,
         label: entry.field.label,

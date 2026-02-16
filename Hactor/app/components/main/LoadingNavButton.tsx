@@ -29,6 +29,8 @@ export default function LoadingNavButton({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
+  const displayLabel = isLoading ? loadingLabel : label;
+
   return (
     <button
       type="button"
@@ -38,28 +40,26 @@ export default function LoadingNavButton({
         if (isLoading) {
           return;
         }
+
         setIsLoading(true);
         router.push(href);
       }}
       className={`${baseStyle} ${variantStyle[variant]}`}
     >
-      {isLoading && (
+      {isLoading ? (
         <span
           aria-hidden="true"
           className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
         />
-      )}
+      ) : null}
+
       <span className="inline-flex items-center">
-        <span>{isLoading ? loadingLabel : label}</span>
+        <span>{displayLabel}</span>
         <span
           aria-hidden="true"
-          className={`ml-0 w-0 overflow-hidden whitespace-nowrap transition-all duration-200 ${
-            isLoading
-              ? "opacity-0"
-              : "opacity-0 group-hover:ml-1.5 group-hover:w-3 group-hover:opacity-100"
-          }`}
+          className="ml-0 w-0 overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover:ml-1.5 group-hover:w-3 group-hover:opacity-100"
         >
-          →
+          &gt;
         </span>
       </span>
     </button>

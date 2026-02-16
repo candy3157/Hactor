@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  memberTagLabelFromField,
+  memberTagToneFromField,
+} from "@/app/data/members";
+import MemberTag from "@/app/components/main/members/MemberTag";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
@@ -196,15 +201,22 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
                       </span>
 
                       <span className="text-white/45">Activity_fields</span>
-                      <span className="space-y-1">
+                      <span className="flex flex-wrap gap-2">
                         {selectedMember.memberActivityFields.length ? (
                           selectedMember.memberActivityFields.map((field) => (
-                            <span
+                            <MemberTag
                               key={`${selectedMember.id}-${field.fieldId}`}
-                              className="block text-white/80"
-                            >
-                              {`{ field_id: ${field.fieldId}, code: "${field.code}", label: "${field.label}", assigned_at: "${field.assignedAt}" }`}
-                            </span>
+                              tag={{
+                                label: memberTagLabelFromField(
+                                  field.code,
+                                  field.label,
+                                ),
+                                tone: memberTagToneFromField(
+                                  field.code,
+                                  field.label,
+                                ),
+                              }}
+                            />
                           ))
                         ) : (
                           <span className="italic text-white/35">null</span>

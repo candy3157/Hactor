@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
@@ -311,6 +312,10 @@ export async function PATCH(
       include: imagesInclude,
     });
 
+    revalidatePath("/");
+    revalidatePath("/activities");
+    revalidatePath(`/activities/${id}`);
+
     return NextResponse.json({ ok: true, activity: serializeActivity(updated) });
   } catch (error) {
     if (
@@ -359,6 +364,10 @@ export async function DELETE(
     await prisma.activity.delete({
       where: { id },
     });
+
+    revalidatePath("/");
+    revalidatePath("/activities");
+    revalidatePath(`/activities/${id}`);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

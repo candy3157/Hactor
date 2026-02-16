@@ -12,7 +12,7 @@ export default function MemberCard({ member }: MemberCardProps) {
         <p className="text-sm font-semibold text-white">{member.name}</p>
         <p className="text-[11px] text-white/50">@{member.handle}</p>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 flex min-h-[28px] flex-wrap content-start gap-2">
         {member.tags.map((tag, tagIndex) => (
           <MemberTag
             key={`${member.handle}-${tag.label}-${tagIndex}`}
