@@ -1,16 +1,11 @@
-import SectionHeading from "./SectionHeading";
-
 export default function HomeAboutSection() {
   return (
-    <section id="about" className="mt-8 space-y-4 scroll-mt-24 text-left">
-      <SectionHeading
-        label="About"
-        title="About"
-        description="HACTOR 소개 콘텐츠를 준비 중입니다."
-      />
-
-      <div className="rounded-2xl border border-dashed border-white/15 bg-[rgba(18,18,24,0.45)] p-6 text-xs text-white/45">
-        소개 문구와 활동 방향, 운영 방침 등을 곧 업데이트할 예정입니다.
+    <section id="about" className="mt-4 space-y-4 scroll-mt-24 text-left">
+      <div className="border-white/15 bg-[rgba(18,18,24,0.45)] text-sm leading-6 text-white/70">
+        HACTOR는 2019년부터 이어져온, 대전대학교 정규 동아리입니다.
+        <br />
+        해킹에 관심 있는 학생들이 모여 활동 및 실습하며 역량을 함께
+        키워나갑니다.
       </div>
     </section>
   );

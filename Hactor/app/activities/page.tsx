@@ -28,6 +28,13 @@ export default async function ActivitiesPage() {
   const activities = await prisma.activity.findMany({
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
+  const nowLabel = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
 
   const activityRows = activities.map((activity) => ({
     id: activity.id,
@@ -53,12 +60,10 @@ export default async function ActivitiesPage() {
               <h1 className="mt-3 font-[var(--font-sf)] text-4xl uppercase tracking-[0.2em] text-white sm:text-5xl">
                 Activities
               </h1>
-              <p className="mt-2 text-xs text-white/50">
-                Club activity log, updated from the admin console.
-              </p>
+              <p className="mt-2 text-xs text-white/50">HACTOR 동아리 활동</p>
             </div>
 
-            <ActivitiesTerminal activities={activityRows} />
+            <ActivitiesTerminal activities={activityRows} nowLabel={nowLabel} />
 
             <div className="flex justify-center">
               <Link

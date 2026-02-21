@@ -105,10 +105,23 @@ export default function AdminActivitiesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [activityQuery, setActivityQuery] = useState("");
+
+  const filteredActivities = useMemo(() => {
+    const query = activityQuery.trim().toLowerCase();
+    if (!query) {
+      return activities;
+    }
+
+    return activities.filter((activity) => {
+      const source = `${activity.title} ${activity.category}`.toLowerCase();
+      return source.includes(query);
+    });
+  }, [activities, activityQuery]);
 
   const selected = useMemo(
-    () => activities.find((item) => item.id === selectedId) ?? null,
-    [activities, selectedId],
+    () => filteredActivities.find((item) => item.id === selectedId) ?? null,
+    [filteredActivities, selectedId],
   );
 
   const previewDateLabel = useMemo(
@@ -151,6 +164,20 @@ export default function AdminActivitiesPage() {
 
     void load();
   }, []);
+
+  useEffect(() => {
+    if (filteredActivities.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+
+    if (
+      !selectedId ||
+      !filteredActivities.some((activity) => activity.id === selectedId)
+    ) {
+      setSelectedId(filteredActivities[0].id);
+    }
+  }, [filteredActivities, selectedId]);
 
   useEffect(() => {
     if (selected) {
@@ -327,10 +354,10 @@ export default function AdminActivitiesPage() {
                 Activities
               </p>
               <h1 className="mt-2 font-[var(--font-display)] text-2xl uppercase tracking-[0.18em] text-white">
-                Activity Manager
+                활동 관리
               </h1>
               <p className="mt-2 text-sm text-white/60">
-                Manage list and detail content for the Activities page.
+                활동 목록 및 활동에 관련된 내용 편집을 진행합니다.
               </p>
             </div>
             <button
@@ -349,38 +376,83 @@ export default function AdminActivitiesPage() {
                   Activities
                 </p>
                 <span className="text-sm text-white/70">
-                  {activities.length}
+                  {activityQuery
+                    ? `${filteredActivities.length}/${activities.length}`
+                    : activities.length}
                 </span>
               </div>
 
-              <div className="mt-6 space-y-3">
-                {activities.map((activity) => (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] px-3 py-2">
+                <svg
+                  className="h-4 w-4 shrink-0 text-white/35"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  value={activityQuery}
+                  onChange={(event) => setActivityQuery(event.target.value)}
+                  placeholder="활동명 검색"
+                  className="h-7 w-full bg-transparent text-sm text-white/80 placeholder:text-white/35 focus:outline-none"
+                />
+                {activityQuery ? (
                   <button
-                    key={activity.id}
                     type="button"
-                    onClick={() => setSelectedId(activity.id)}
-                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
-                      activity.id === selectedId
-                        ? "border-white/30 bg-white/10"
-                        : "border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10"
-                    }`}
+                    onClick={() => setActivityQuery("")}
+                    className="text-xs font-medium text-emerald-300/85 hover:text-emerald-200"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-white">
-                          {activity.title}
-                        </p>
-                        <p className="mt-1 text-[11px] text-white/50">
-                          {activity.dateLabel} / {activity.year}
-                        </p>
-                      </div>
-                      <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
-                        {activity.category}
-                      </span>
-                    </div>
+                    Cancel
                   </button>
-                ))}
+                ) : null}
               </div>
+
+              {activities.length === 0 ? (
+                <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-sm text-white/50">
+                  등록된 활동이 없습니다.
+                </div>
+              ) : filteredActivities.length === 0 ? (
+                <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-sm text-white/50">
+                  검색 결과가 없습니다.
+                </div>
+              ) : (
+                <div className="mt-6 space-y-3">
+                  {filteredActivities.map((activity) => (
+                    <button
+                      key={activity.id}
+                      type="button"
+                      onClick={() => setSelectedId(activity.id)}
+                      className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                        activity.id === selectedId
+                          ? "border-white/30 bg-white/10"
+                          : "border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">
+                            {activity.title}
+                          </p>
+                          <p className="mt-1 text-[11px] text-white/50">
+                            {activity.dateLabel} / {activity.year}
+                          </p>
+                        </div>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-white/50">
+                          {activity.category}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
 
             <section className="rounded-[24px] border border-white/10 bg-[rgba(12,12,16,0.9)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.5)]">

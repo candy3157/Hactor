@@ -71,6 +71,7 @@ model Member {
   displayName     String                @map("display_name")
   username        String?
   avatarUrl       String?               @map("avatar_url")
+  activityFields  String?               @map("activity_fields_text") @db.Text
   discordJoinedAt DateTime?             @map("discord_joined_at")
   isActive        Boolean               @default(true) @map("is_active")
   createdAt       DateTime              @default(now()) @map("created_at")

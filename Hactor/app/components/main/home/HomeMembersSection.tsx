@@ -7,7 +7,9 @@ type HomeMembersSectionProps = {
   members: MemberProfile[];
 };
 
-export default function HomeMembersSection({ members }: HomeMembersSectionProps) {
+export default function HomeMembersSection({
+  members,
+}: HomeMembersSectionProps) {
   return (
     <section id="members" className="mt-8 space-y-5 scroll-mt-24 text-center">
       <SectionHeading

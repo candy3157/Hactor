@@ -8,6 +8,7 @@ type Payload = {
   displayName?: string;
   username?: string | null;
   isActive?: boolean;
+  activityFields?: string | null;
   fieldIds?: number[];
   discordJoinedAt?: string | null;
 };
@@ -57,6 +58,12 @@ export async function PATCH(
         displayName: payload.displayName?.trim(),
         username: payload.username?.trim() || null,
         isActive: typeof payload.isActive === "boolean" ? payload.isActive : undefined,
+        activityFields:
+          typeof payload.activityFields === "string"
+            ? payload.activityFields.trim() || null
+            : payload.activityFields === null
+              ? null
+              : undefined,
         discordJoinedAt: payload.discordJoinedAt
           ? new Date(payload.discordJoinedAt)
           : payload.discordJoinedAt === null
@@ -98,6 +105,7 @@ export async function PATCH(
     displayName: updated.displayName,
     username: updated.username,
     avatarUrl: updated.avatarUrl,
+    activityFields: updated.activityFields,
     discordJoinedAt: updated.discordJoinedAt,
     isActive: updated.isActive,
     fields: updated.fields.map((entry) => ({

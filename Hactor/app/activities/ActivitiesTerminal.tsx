@@ -15,6 +15,7 @@ type ActivityRow = {
 
 type ActivitiesTerminalProps = {
   activities: ActivityRow[];
+  nowLabel: string;
 };
 
 type ViewMode = "icon" | "list";
@@ -22,11 +23,8 @@ type DirectoryState = { kind: "activities" } | { kind: "year"; year: number };
 
 const DEFAULT_YEARS = [2025, 2026];
 const ACTIVITY_RETURN_STATE_KEY = "activities:return-state";
-
-type RestoredState = {
-  currentDir: DirectoryState;
-  selectedActivityId: string | null;
-};
+const FOLDER_ICON_PATH = "/activity/folder.png";
+const FILE_ICON_PATH = "/activity/application-document.svg";
 
 const filterActivities = (activities: ActivityRow[], query: string) => {
   const normalized = query.trim().toLowerCase();
@@ -58,60 +56,18 @@ const compareActivitiesByDateDesc = (a: ActivityRow, b: ActivityRow) => {
   return a.title.localeCompare(b.title);
 };
 
-const restoreStateFromSession = (): RestoredState => {
-  const fallback: RestoredState = {
-    currentDir: { kind: "activities" },
-    selectedActivityId: null,
-  };
-
-  if (typeof window === "undefined") {
-    return fallback;
-  }
-
-  const rawState = window.sessionStorage.getItem(ACTIVITY_RETURN_STATE_KEY);
-  if (!rawState) {
-    return fallback;
-  }
-
-  window.sessionStorage.removeItem(ACTIVITY_RETURN_STATE_KEY);
-
-  try {
-    const parsed = JSON.parse(rawState) as {
-      year?: unknown;
-      selectedActivityId?: unknown;
-    };
-
-    const restoredDir: DirectoryState =
-      typeof parsed.year === "number" && Number.isInteger(parsed.year)
-        ? { kind: "year", year: parsed.year }
-        : fallback.currentDir;
-    const restoredSelectedId =
-      typeof parsed.selectedActivityId === "string"
-        ? parsed.selectedActivityId
-        : null;
-
-    return {
-      currentDir: restoredDir,
-      selectedActivityId: restoredSelectedId,
-    };
-  } catch {
-    // Ignore malformed state from session storage.
-    return fallback;
-  }
-};
-
 export default function ActivitiesTerminal({
   activities,
+  nowLabel,
 }: ActivitiesTerminalProps) {
   const router = useRouter();
-  const [restoredState] = useState(restoreStateFromSession);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("icon");
-  const [currentDir, setCurrentDir] = useState<DirectoryState>(
-    restoredState.currentDir,
-  );
+  const [currentDir, setCurrentDir] = useState<DirectoryState>({
+    kind: "activities",
+  });
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
-    restoredState.selectedActivityId,
+    null,
   );
   const [pendingActivityId, setPendingActivityId] = useState<string | null>(
     null,
@@ -149,22 +105,10 @@ export default function ActivitiesTerminal({
     return grouped;
   }, [filteredActivities, years]);
 
-  const nowLabel = useMemo(
-    () =>
-      new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).format(new Date()),
-    [],
-  );
-
   const path =
     currentDir.kind === "activities"
-      ? "/kali/Hactor/Activities"
-      : `/kali/Hactor/Activities/${currentDir.year}`;
+      ? "/home/hactor/Activities"
+      : `/home/hactor/Activities/${currentDir.year}`;
   const currentDirActivities =
     currentDir.kind === "year"
       ? (activitiesByYear.get(currentDir.year) ?? [])
@@ -197,136 +141,136 @@ export default function ActivitiesTerminal({
   };
 
   return (
-    <div className="relative min-h-[560px] overflow-hidden rounded-2xl border border-white/10 bg-[#060a12] shadow-[0_30px_90px_rgba(0,0,0,0.6)]">
-      <div className="absolute inset-0 bg-[url('/kali-background.png')] bg-cover bg-center opacity-45" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(35,95,160,0.35),transparent_42%),radial-gradient(circle_at_84%_78%,rgba(162,53,98,0.28),transparent_45%),linear-gradient(180deg,rgba(8,12,20,0.6),rgba(8,12,20,0.9))]" />
+    <div className="relative min-h-[560px] overflow-hidden rounded-2xl border border-[#433a45] bg-[#161319] shadow-[0_30px_90px_rgba(0,0,0,0.55)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_0%,rgba(233,84,32,0.18),transparent_40%),radial-gradient(circle_at_0%_100%,rgba(119,45,145,0.25),transparent_45%)]" />
 
-      <div className="absolute inset-x-0 top-0 z-20 flex h-8 items-center justify-between border-b border-white/10 bg-[rgba(12,18,30,0.85)] px-3 text-[11px] text-white/80 backdrop-blur-[10px]">
-        <div className="flex items-center gap-4">
-          <span>Applications</span>
-          <span>Places</span>
-          <span>Terminal</span>
-        </div>
-        <span>{nowLabel}</span>
-      </div>
-
-      <div className="pointer-events-none absolute bottom-5 left-6 hidden rounded-md border border-white/10 bg-[rgba(20,26,40,0.75)] px-4 py-2 text-center font-mono text-[#7dd6ff] shadow-[0_12px_30px_rgba(0,0,0,0.4)] lg:block">
-        <p className="text-[42px] leading-none tracking-[0.04em]">06:34</p>
-        <p className="mt-1 text-[11px] text-white/45">2022-12-10</p>
-      </div>
-
-      <div className="relative z-10 flex min-h-[560px] items-center justify-center px-4 pb-5 pt-12">
-        <div className="flex h-[500px] w-full max-w-[1020px] flex-col overflow-hidden rounded-[10px] border border-white/10 bg-[rgba(31,36,48,0.96)] shadow-[0_22px_70px_rgba(0,0,0,0.55)]">
-          <div className="flex items-center justify-between border-b border-white/10 bg-[rgba(28,32,43,0.95)] px-4 py-2">
-            <div className="flex items-center gap-2">
-              <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-              <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
-              <span className="h-3 w-3 rounded-full bg-[#28ca42]" />
-            </div>
-            <p className="text-[13px] text-white/65">Activiteis</p>
-            <div className="w-12" />
-          </div>
-
-          <div className="flex items-center gap-2 border-b border-white/10 bg-[rgba(39,44,58,0.95)] px-3 py-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (currentDir.kind === "activities") {
-                  return;
-                }
-                setCurrentDir({ kind: "activities" });
-                setSelectedActivityId(null);
-              }}
-              disabled={currentDir.kind === "activities" || isNavigating}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 bg-[rgba(21,27,38,0.8)] text-sm text-white/70 transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-              aria-label="Back"
-            >
-              &lt;
-            </button>
-
-            <div className="flex h-8 min-w-0 flex-1 items-center rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] px-3 text-[12px] text-white/75">
-              <span className="truncate">{path}</span>
-              {isNavigating ? (
-                <span className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#6cb5e9]/40 bg-[rgba(74,158,255,0.14)] px-2 py-0.5 text-[10px] text-[#9ed6ff]">
-                  <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
-                  Opening...
-                </span>
-              ) : null}
-            </div>
-
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search..."
-              aria-label="Search activities"
-              disabled={isNavigating}
-              className="h-8 w-40 rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] px-3 text-[12px] text-white/80 outline-none placeholder:text-white/35 disabled:cursor-not-allowed disabled:opacity-45 sm:w-52"
-            />
-
-            <div className="flex items-center gap-1 rounded-md border border-white/10 bg-[rgba(20,25,36,0.85)] p-1">
+      <div className="relative z-10 flex min-h-[560px] items-center justify-center px-3 py-4 sm:px-4 sm:py-5">
+        <div className="flex h-[500px] w-full max-w-[1020px] flex-col overflow-hidden rounded-xl border border-black/35 bg-[#ececec] shadow-[0_22px_70px_rgba(0,0,0,0.52)]">
+          <div className="flex h-11 items-center justify-between border-b border-black/25 bg-[#2f2b31] px-3 text-white/90">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setViewMode("icon")}
-                disabled={isNavigating}
-                className={`inline-flex h-6 w-6 items-center justify-center rounded text-[11px] transition ${
-                  viewMode === "icon"
-                    ? "bg-[rgba(90,159,212,0.35)] text-[#9ed6ff]"
-                    : "text-white/60 hover:bg-white/10 hover:text-white"
-                }`}
-                aria-label="Icon view"
+                onClick={() => {
+                  if (currentDir.kind === "activities") {
+                    return;
+                  }
+                  setCurrentDir({ kind: "activities" });
+                  setSelectedActivityId(null);
+                }}
+                disabled={currentDir.kind === "activities" || isNavigating}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/15 bg-white/5 text-sm text-white/75 transition hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label="Back"
               >
-                []
+                &lt;
               </button>
               <button
                 type="button"
-                onClick={() => setViewMode("list")}
-                disabled={isNavigating}
-                className={`inline-flex h-6 w-6 items-center justify-center rounded text-[11px] transition ${
-                  viewMode === "list"
-                    ? "bg-[rgba(90,159,212,0.35)] text-[#9ed6ff]"
-                    : "text-white/60 hover:bg-white/10 hover:text-white"
-                }`}
-                aria-label="List view"
+                disabled
+                className="inline-flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-md border border-white/10 bg-white/[0.03] text-sm text-white/30"
+                aria-label="Forward"
               >
-                ==
+                &gt;
+              </button>
+              <div className="ml-1 flex items-center rounded-md border border-white/15 bg-white/[0.07] px-3 py-1 text-sm">
+                Computer
+                <span className="ml-2 text-xs text-white/70">v</span>
+              </div>
+            </div>
+
+            <div className="mx-3 hidden min-w-0 flex-1 sm:block">
+              <div className="flex h-8 items-center rounded-md border border-white/15 bg-black/20 px-3 text-[12px] text-white/85">
+                <span className="truncate">{path}</span>
+                {isNavigating ? (
+                  <span className="ml-3 inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#e95420]/50 bg-[#e95420]/20 px-2 py-0.5 text-[10px] text-[#ffd0c0]">
+                    <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#ffd0c0]/30 border-t-[#ffd0c0]" />
+                    Opening...
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search"
+                aria-label="Search activities"
+                disabled={isNavigating}
+                className="h-7 w-24 rounded-md border border-white/15 bg-black/20 px-2.5 text-[12px] text-white/90 outline-none placeholder:text-white/40 disabled:cursor-not-allowed disabled:opacity-45 sm:w-36"
+              />
+              <div className="hidden items-center gap-1 rounded-md border border-white/15 bg-black/20 p-1 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("icon")}
+                  disabled={isNavigating}
+                  className={`inline-flex h-5 w-6 items-center justify-center rounded text-[10px] transition ${
+                    viewMode === "icon"
+                      ? "bg-[#e95420] text-white"
+                      : "text-white/70 hover:bg-white/15"
+                  }`}
+                  aria-label="Icon view"
+                >
+                  []
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  disabled={isNavigating}
+                  className={`inline-flex h-5 w-6 items-center justify-center rounded text-[10px] transition ${
+                    viewMode === "list"
+                      ? "bg-[#e95420] text-white"
+                      : "text-white/70 hover:bg-white/15"
+                  }`}
+                  aria-label="List view"
+                >
+                  ==
+                </button>
+              </div>
+              <button
+                type="button"
+                aria-label="Close window"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e95420] text-sm text-white"
+              >
+                x
               </button>
             </div>
           </div>
 
           <div className="flex min-h-0 flex-1">
-            <aside className="hidden w-56 border-r border-white/10 bg-[rgba(30,35,47,0.85)] p-3 text-[13px] text-white/65 md:block">
-              <div className="rounded-md bg-[rgba(90,159,212,0.2)] px-3 py-2 text-white">
+            <aside className="hidden w-52 border-r border-[#d3d3d3] bg-[#e7e7e7] p-3 text-[14px] text-[#1f1f1f] md:block">
+              <p className="px-3 py-1.5 font-medium text-black">Recent</p>
+              <p className="mt-1 rounded-md bg-[#d6d6d6] px-3 py-1.5 font-medium text-black">
                 Activities
-              </div>
-              <div className="mt-1 space-y-1">
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+              </p>
+              <div className="mt-2 space-y-1 text-[#2e2e2e]">
+                <p className="rounded-md px-3 py-1.5 hover:bg-[#d9d9d9]">
                   Home
-                </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                </p>
+                <p className="rounded-md px-3 py-1.5 hover:bg-[#d9d9d9]">
                   Documents
-                </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                </p>
+                <p className="rounded-md px-3 py-1.5 hover:bg-[#d9d9d9]">
                   Downloads
-                </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                </p>
+                <p className="rounded-md px-3 py-1.5 hover:bg-[#d9d9d9]">
                   Music
-                </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                </p>
+                <p className="rounded-md px-3 py-1.5 hover:bg-[#d9d9d9]">
                   Pictures
-                </div>
-                <div className="rounded-md px-3 py-2 hover:bg-white/8">
+                </p>
+                <p className="rounded-md px-3 py-1.5 hover:bg-[#d9d9d9]">
                   Videos
-                </div>
+                </p>
               </div>
-              <div className="my-2 h-px bg-white/10" />
-              <div className="rounded-md px-3 py-2 hover:bg-white/8">
+              <div className="my-2 h-px bg-[#cfcfcf]" />
+              <p className="rounded-md px-3 py-1.5 text-[#2e2e2e] hover:bg-[#d9d9d9]">
                 Other Locations
-              </div>
+              </p>
             </aside>
 
-            <section className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-[rgba(22,27,39,0.58)] p-5">
+            <section className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#f5f5f5] p-4 text-[#1f1f1f] sm:p-5">
               {currentDir.kind === "activities" ? (
-                <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                   {years.map((year) => (
                     <button
                       key={year}
@@ -336,24 +280,24 @@ export default function ActivitiesTerminal({
                         setSelectedActivityId(null);
                       }}
                       disabled={isNavigating}
-                      className="group relative flex flex-col items-center gap-2 rounded-lg px-2 py-3 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-55"
+                      className="group relative flex flex-col items-center gap-1.5 rounded-lg px-2 py-2 transition hover:bg-[#e4e4e4] disabled:cursor-not-allowed disabled:opacity-55"
                     >
                       <Image
-                        src="/folder_temp.svg"
+                        src={FOLDER_ICON_PATH}
                         alt={`${year} folder`}
-                        width={74}
-                        height={60}
-                        className="drop-shadow-[0_8px_16px_rgba(52,131,205,0.35)] transition group-hover:scale-[1.03]"
+                        width={72}
+                        height={56}
+                        className="transition group-hover:scale-[1.03]"
                       />
-                      <span className="text-[13px] text-white/90">{year}</span>
-                      <span className="absolute right-2 top-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                      <span className="text-[14px] text-[#1c1c1c]">{year}</span>
+                      <span className="absolute right-1.5 top-1 rounded-full bg-[#7a2a86] px-2 py-0.5 text-[10px] font-semibold text-white">
                         {activitiesByYear.get(year)?.length ?? 0}
                       </span>
                     </button>
                   ))}
                 </div>
               ) : viewMode === "icon" ? (
-                <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
                   {currentDirActivities.map((activity) => {
                     const fileName = toFileName(activity.title);
                     const isSelected = selectedActivityId === activity.id;
@@ -367,30 +311,30 @@ export default function ActivitiesTerminal({
                         onClick={() => setSelectedActivityId(activity.id)}
                         onDoubleClick={() => openActivityDetail(activity)}
                         disabled={isNavigating}
-                        className={`flex flex-col items-center gap-2 rounded-lg px-2 py-3 transition ${
+                        className={`flex flex-col items-center gap-1.5 rounded-lg px-2 py-2 transition ${
                           isDimmed
                             ? "opacity-50"
                             : isSelected
-                            ? "bg-[rgba(90,159,212,0.22)]"
-                            : "hover:bg-white/10"
+                              ? "bg-[#e8ddf0]"
+                              : "hover:bg-[#e4e4e4]"
                         }`}
                       >
                         <Image
-                          src="/application-document.svg"
+                          src={FILE_ICON_PATH}
                           alt="activity file"
                           width={46}
                           height={56}
                         />
-                        <span className="line-clamp-2 text-center text-[12px] text-white/90">
+                        <span className="line-clamp-2 text-center text-[12px] text-[#1f1f1f]">
                           {fileName}
                         </span>
                         {isPending ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[#9ed6ff]">
-                            <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[#7a2a86]">
+                            <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#7a2a86]/30 border-t-[#7a2a86]" />
                             Opening...
                           </span>
                         ) : (
-                          <span className="text-[10px] text-white/45">
+                          <span className="text-[10px] text-[#666]">
                             {activity.dateLabel}
                           </span>
                         )}
@@ -400,7 +344,7 @@ export default function ActivitiesTerminal({
                 </div>
               ) : (
                 <div className="space-y-1 text-[12px]">
-                  <div className="grid grid-cols-[42px_minmax(180px,2fr)_minmax(90px,1fr)_minmax(80px,0.8fr)] gap-3 rounded-md bg-[rgba(40,46,60,0.88)] px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-white/45">
+                  <div className="grid grid-cols-[42px_minmax(180px,2fr)_minmax(90px,1fr)_minmax(80px,0.8fr)] gap-3 rounded-md bg-[#e3e3e3] px-3 py-2 text-[11px] uppercase tracking-[0.08em] text-[#666]">
                     <span>Icon</span>
                     <span>Name</span>
                     <span>Modified</span>
@@ -423,30 +367,30 @@ export default function ActivitiesTerminal({
                           isDimmed
                             ? "opacity-50"
                             : isSelected
-                            ? "bg-[rgba(90,159,212,0.22)]"
-                            : "hover:bg-white/10"
+                              ? "bg-[#e8ddf0]"
+                              : "hover:bg-[#e9e9e9]"
                         }`}
                       >
                         <Image
-                          src="/application-document.svg"
+                          src={FILE_ICON_PATH}
                           alt="activity file"
-                          width={22}
-                          height={26}
+                          width={20}
+                          height={24}
                         />
-                        <span className="truncate text-white/90">
+                        <span className="truncate text-[#1f1f1f]">
                           {fileName}
                         </span>
                         {isPending ? (
-                          <span className="inline-flex items-center gap-1 truncate text-[#9ed6ff]">
-                            <span className="h-2.5 w-2.5 shrink-0 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+                          <span className="inline-flex items-center gap-1 truncate text-[#7a2a86]">
+                            <span className="h-2.5 w-2.5 shrink-0 animate-spin rounded-full border border-[#7a2a86]/30 border-t-[#7a2a86]" />
                             Opening...
                           </span>
                         ) : (
-                          <span className="truncate text-white/55">
+                          <span className="truncate text-[#666]">
                             {activity.dateLabel}
                           </span>
                         )}
-                        <span className="truncate text-white/60">
+                        <span className="truncate text-[#555]">
                           {activity.category}
                         </span>
                       </button>
@@ -457,19 +401,19 @@ export default function ActivitiesTerminal({
             </section>
           </div>
 
-          <div className="flex items-center justify-between border-t border-white/10 bg-[rgba(28,33,45,0.95)] px-3 py-1.5 text-[10px] text-white/45">
+          <div className="flex items-center justify-between border-t border-[#d6d6d6] bg-[#ececec] px-3 py-1.5 text-[10px] text-[#666]">
             <span>
               {currentDir.kind === "activities"
                 ? `${years.length} items`
                 : `${currentDirActivities.length} items`}
             </span>
             {isNavigating ? (
-              <span className="inline-flex items-center gap-1.5 text-[#9ed6ff]">
-                <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#9ed6ff]/35 border-t-[#9ed6ff]" />
+              <span className="inline-flex items-center gap-1.5 text-[#7a2a86]">
+                <span className="h-2.5 w-2.5 animate-spin rounded-full border border-[#7a2a86]/30 border-t-[#7a2a86]" />
                 Loading detail...
               </span>
             ) : (
-              <span>{currentDirName}</span>
+              <span>{`${currentDirName} / ${nowLabel}`}</span>
             )}
           </div>
         </div>

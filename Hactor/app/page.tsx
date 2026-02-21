@@ -1,6 +1,5 @@
 import localFont from "next/font/local";
 import BrutalistActivitiesSection from "./components/main/activities/BrutalistActivitiesSection";
-import HomeAboutSection from "./components/main/home/HomeAboutSection";
 import HomeFooter from "./components/main/home/HomeFooter";
 import HomeHeroSection from "./components/main/home/HomeHeroSection";
 import HomeMembersSection from "./components/main/home/HomeMembersSection";
@@ -29,8 +28,6 @@ const body = localFont({
   variable: "--font-body",
   display: "swap",
 });
-
-const DISCORD_INVITE_URL = "https://discord.gg/hactor";
 
 export const runtime = "nodejs";
 export const revalidate = 60;
@@ -67,13 +64,11 @@ export default async function Home() {
     <HomeShell fontClassName={`${display.variable} ${body.variable}`}>
       <HomeHeroSection />
       <SectionDivider />
-      <HomeAboutSection />
-      <SectionDivider />
       <HomeMembersSection members={members} />
       <SectionDivider />
       <BrutalistActivitiesSection history={activityHistory} />
       <SectionDivider />
-      <HomeFooter discordInviteUrl={DISCORD_INVITE_URL} />
+      <HomeFooter />
     </HomeShell>
   );
 }

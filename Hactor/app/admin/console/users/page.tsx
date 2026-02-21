@@ -7,11 +7,6 @@ import DatePicker from "react-datepicker";
 import { ko } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
 
-type MemberField = {
-  fieldId: number;
-  label: string;
-};
-
 type Member = {
   id: string;
   discordId: string | null;
@@ -20,13 +15,7 @@ type Member = {
   avatarUrl: string | null;
   discordJoinedAt: string | null;
   isActive: boolean;
-  fields: MemberField[];
-};
-
-type Field = {
-  id: number;
-  label: string;
-  code: string;
+  activityFields: string | null;
 };
 
 type MemberDraft = {
@@ -34,7 +23,7 @@ type MemberDraft = {
   displayName: string;
   username: string;
   isActive: boolean;
-  fieldIds: number[];
+  activityFields: string;
 };
 
 const emptyDraft: MemberDraft = {
@@ -42,7 +31,7 @@ const emptyDraft: MemberDraft = {
   displayName: "",
   username: "",
   isActive: true,
-  fieldIds: [],
+  activityFields: "",
 };
 
 const formatDate = (value: string | null) => {
@@ -56,50 +45,64 @@ const formatDate = (value: string | null) => {
 
 export default function AdminUsersPage() {
   const [members, setMembers] = useState<Member[]>([]);
-  const [fields, setFields] = useState<Field[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<MemberDraft>(emptyDraft);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [joinDate, setJoinDate] = useState<Date | null>(null);
-  const [fieldQuery, setFieldQuery] = useState("");
+  const [memberQuery, setMemberQuery] = useState("");
+
+  const filteredMembers = useMemo(() => {
+    const query = memberQuery.trim().toLowerCase();
+    if (!query) {
+      return members;
+    }
+
+    return members.filter((member) => {
+      const source =
+        `${member.displayName} ${member.username ?? ""}`.toLowerCase();
+      return source.includes(query);
+    });
+  }, [members, memberQuery]);
 
   const selectedMember = useMemo(
-    () => members.find((member) => member.id === selectedId) ?? null,
-    [members, selectedId],
+    () => filteredMembers.find((member) => member.id === selectedId) ?? null,
+    [filteredMembers, selectedId],
   );
 
   const isFormValid = useMemo(
     () => draft.displayName.trim().length > 0,
     [draft.displayName],
   );
-  const filteredFields = useMemo(() => {
-    const query = fieldQuery.trim().toLowerCase();
-    if (!query) {
-      return fields;
-    }
-    return fields.filter((field) => {
-      const source = `${field.label} ${field.code}`.toLowerCase();
-      return source.includes(query);
-    });
-  }, [fields, fieldQuery]);
 
   useEffect(() => {
     const load = async () => {
       const res = await fetch("/api/admin/members");
       const data = (await res.json()) as {
         members: Member[];
-        fields: Field[];
       };
       setMembers(data.members ?? []);
-      setFields(data.fields ?? []);
       if (data.members?.length) {
         setSelectedId(data.members[0].id);
       }
     };
     void load();
   }, []);
+
+  useEffect(() => {
+    if (filteredMembers.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+
+    if (
+      !selectedId ||
+      !filteredMembers.some((member) => member.id === selectedId)
+    ) {
+      setSelectedId(filteredMembers[0].id);
+    }
+  }, [filteredMembers, selectedId]);
 
   useEffect(() => {
     if (!selectedMember) {
@@ -110,27 +113,14 @@ export default function AdminUsersPage() {
       displayName: selectedMember.displayName,
       username: selectedMember.username ?? "",
       isActive: selectedMember.isActive,
-      fieldIds: selectedMember.fields.map((entry) => entry.fieldId),
+      activityFields: selectedMember.activityFields ?? "",
     });
     setJoinDate(
       selectedMember.discordJoinedAt
         ? new Date(selectedMember.discordJoinedAt)
         : null,
     );
-    setFieldQuery("");
   }, [selectedMember]);
-
-  const toggleField = (fieldId: number) => {
-    setDraft((prev) => {
-      const exists = prev.fieldIds.includes(fieldId);
-      return {
-        ...prev,
-        fieldIds: exists
-          ? prev.fieldIds.filter((id) => id !== fieldId)
-          : [...prev.fieldIds, fieldId],
-      };
-    });
-  };
 
   const handleSave = async () => {
     if (!selectedId) {
@@ -150,7 +140,7 @@ export default function AdminUsersPage() {
           displayName: draft.displayName,
           username: draft.username,
           isActive: draft.isActive,
-          fieldIds: draft.fieldIds,
+          activityFields: draft.activityFields,
           discordJoinedAt: joinDate ? joinDate.toISOString() : null,
         }),
       });
@@ -239,17 +229,54 @@ export default function AdminUsersPage() {
                   Members
                 </p>
                 <span className="text-sm text-white/70">
-                  {members.length}명
+                  {memberQuery ? `${filteredMembers.length}/${members.length}` : members.length}명
                 </span>
+              </div>
+
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] px-3 py-2">
+                <svg
+                  className="h-4 w-4 shrink-0 text-white/35"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <input
+                  type="text"
+                  value={memberQuery}
+                  onChange={(event) => setMemberQuery(event.target.value)}
+                  placeholder="이름 검색"
+                  className="h-7 w-full bg-transparent text-sm text-white/80 placeholder:text-white/35 focus:outline-none"
+                />
+                {memberQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setMemberQuery("")}
+                    className="text-xs font-medium text-emerald-300/85 hover:text-emerald-200"
+                  >
+                    Cancel
+                  </button>
+                ) : null}
               </div>
 
               {members.length === 0 ? (
                 <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-sm text-white/50">
                   아직 등록된 멤버가 없습니다.
                 </div>
+              ) : filteredMembers.length === 0 ? (
+                <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-10 text-center text-sm text-white/50">
+                  검색 결과가 없습니다.
+                </div>
               ) : (
                 <div className="mt-6 space-y-4 pb-2">
-                  {members.map((member) => (
+                  {filteredMembers.map((member) => (
                     <button
                       key={member.id}
                       type="button"
@@ -278,22 +305,12 @@ export default function AdminUsersPage() {
                       <p className="mt-1 text-[11px] text-white/45">
                         가입일 {formatDate(member.discordJoinedAt)}
                       </p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.2em] text-white/60">
-                        {member.fields.length === 0 ? (
-                          <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/50">
-                            미정
-                          </span>
-                        ) : (
-                          member.fields.map((entry) => (
-                            <span
-                              key={`${member.id}-${entry.fieldId}`}
-                              className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/70"
-                            >
-                              {entry.label}
-                            </span>
-                          ))
-                        )}
-                      </div>
+                      <p className="mt-2 text-[11px] text-white/60">
+                        활동 분야:{" "}
+                        <span className="text-white/75">
+                          {member.activityFields?.trim() ?? ""}
+                        </span>
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -373,109 +390,20 @@ export default function AdminUsersPage() {
                       활동 분야
                     </span>
                     <p className="mt-2 text-[11px] text-white/45">
-                      미선택 가능
+                      자유 입력 (예: `Web, Reverse, Forensic`)
                     </p>
-                    <div className="mt-3 rounded-2xl border border-white/10 bg-[rgba(15,18,22,0.78)] p-3 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)]">
-                      <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] px-3 py-2">
-                        <svg
-                          className="h-4 w-4 shrink-0 text-white/35"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M21 21l-4.3-4.3M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14Z"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <input
-                          type="text"
-                          value={fieldQuery}
-                          onChange={(event) => setFieldQuery(event.target.value)}
-                          placeholder="활동 분야 검색"
-                          className="h-7 w-full bg-transparent text-sm text-white/80 placeholder:text-white/35 focus:outline-none"
-                        />
-                        {fieldQuery ? (
-                          <button
-                            type="button"
-                            onClick={() => setFieldQuery("")}
-                            className="text-xs font-medium text-emerald-300/85 hover:text-emerald-200"
-                          >
-                            Cancel
-                          </button>
-                        ) : null}
-                      </div>
-
-                      <div className="mt-3 rounded-md border border-white/10 bg-[rgba(255,255,255,0.05)] px-3 py-2 text-xs font-medium text-white/45">
-                        Matching fields
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {fields.length === 0 ? (
-                          <div className="w-full rounded-xl border border-dashed border-white/15 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-center text-[11px] text-white/50">
-                            등록된 활동 분야가 없습니다.
-                          </div>
-                        ) : filteredFields.length === 0 ? (
-                          <div className="w-full rounded-xl border border-dashed border-white/15 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-center text-[11px] text-white/50">
-                            검색 결과가 없습니다.
-                          </div>
-                        ) : (
-                          filteredFields.map((field) => {
-                            const selected = draft.fieldIds.includes(field.id);
-                            return (
-                              <button
-                                key={field.id}
-                                type="button"
-                                onClick={() => toggleField(field.id)}
-                                aria-pressed={selected}
-                                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all ${
-                                  selected
-                                    ? "border-emerald-300/45 bg-emerald-500/20 text-emerald-100 shadow-[0_6px_18px_rgba(16,185,129,0.22)]"
-                                    : "border-white/15 bg-[rgba(255,255,255,0.06)] text-white/80 hover:border-white/30 hover:bg-[rgba(255,255,255,0.1)]"
-                                }`}
-                              >
-                                <span>{field.label}</span>
-                                <span className="inline-flex h-4 w-4 items-center justify-center leading-none">
-                                  {selected ? (
-                                    <svg
-                                      className="h-3.5 w-3.5"
-                                      viewBox="0 0 16 16"
-                                      fill="none"
-                                      aria-hidden="true"
-                                    >
-                                      <path
-                                        d="M3.5 8.2 6.6 11.3 12.5 5.4"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                      />
-                                    </svg>
-                                  ) : (
-                                    <span className="text-base leading-none">+</span>
-                                  )}
-                                </span>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-2 text-[11px] text-white/45">
-                      선택됨: {draft.fieldIds.length}개
-                    </div>
-                    <div className="mt-2 flex justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setDraft((prev) => ({ ...prev, fieldIds: [] }))}
-                        className="text-[11px] font-medium text-white/55 underline-offset-2 transition hover:text-white/80 hover:underline"
-                      >
-                        모두 해제
-                      </button>
-                    </div>
+                    <input
+                      type="text"
+                      value={draft.activityFields}
+                      onChange={(event) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          activityFields: event.target.value,
+                        }))
+                      }
+                      placeholder="예: Web, Reverse, Crypto"
+                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 placeholder:text-white/35 focus:border-white/30 focus:outline-none"
+                    />
                   </label>
 
                   <label className="block">

@@ -98,23 +98,29 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
   }, [isDetailOpen]);
 
   return (
-    <div className="relative min-h-[520px] overflow-hidden rounded-2xl border border-white/10 p-6 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)]">
-      <div className="absolute inset-0 bg-[url('/kali-background.png')] bg-cover bg-center opacity-35" />
-      <div className="absolute inset-0 bg-[rgba(12,16,24,0.75)]" />
+    <div className="relative min-h-[520px] overflow-hidden rounded-2xl border border-[#4e2a3c] p-6 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.04),0_24px_50px_rgba(0,0,0,0.45)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_0%,#4f163b_0%,#2f0a25_42%,#21071b_100%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(0,0,0,0.14)_100%)]" />
 
       <div className="relative z-10 flex min-h-[520px] flex-col">
-        <div className="border-b border-[rgba(74,158,255,0.2)] pb-2">
+        <div className="-mx-6 -mt-6 mb-3 overflow-hidden border-b border-black/30">
+          <div className="flex h-9 items-center justify-center bg-gradient-to-b from-[#4b4b4b] to-[#3b3b3b] text-sm font-semibold text-white/90">
+            hactor@ubuntu: userlist
+          </div>
+        </div>
+
+        <div className="border-b border-[#e95420]/35 pb-2">
           <div className="flex flex-wrap items-center font-mono text-[11px] tracking-[0.02em]">
-            <span className="font-semibold text-[#ff3e3e]">kali@kali</span>
+            <span className="font-semibold text-[#8ae234]">hactor@ubuntu</span>
             <span className="text-white">:</span>
-            <span className="font-semibold text-[#4a9eff]">~</span>
-            <span className="text-white">$</span>
+            <span className="font-semibold text-[#729fcf]">~</span>
+            <span className="text-[#FFFFFF]">$</span>
             <span className="ml-2 flex items-center gap-2">
               <span className="text-white">grep -i</span>
               <span className="relative min-w-[180px] flex-1 cursor-text whitespace-pre">
                 <span className="text-white">{query}</span>
                 <span
-                  className="cursor-step inline-block h-[1.2em] !w-[8px] bg-white ml-[2px] align-text-bottom animate-[blink-step_0.8s_step-end_infinite]"
+                  className="cursor-step ml-[2px] inline-block h-[1.2em] !w-[8px] animate-[blink-step_0.8s_step-end_infinite] bg-[#FFFFFF] align-text-bottom"
                   aria-hidden="true"
                 />
                 <input
@@ -131,17 +137,17 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
 
         <div className="mt-3 font-mono text-[11px] text-white/70">
           <div className="mb-1">
-            <span className="font-semibold text-[#ff3e3e]">kali@kali</span>
+            <span className="font-semibold text-[#8ae234]">hactor@ubuntu</span>
             <span className="text-white">:</span>
-            <span className="font-semibold text-[#4a9eff]">~</span>
-            <span className="text-[#4a9eff]">$ </span>
+            <span className="font-semibold text-[#729fcf]">~</span>
+            <span className="text-[#FFFFFF]">$ </span>
             <span className="text-white/50"># List all HACTOR members</span>
           </div>
           <div>
-            <span className="font-semibold text-[#ff3e3e]">kali@kali</span>
+            <span className="font-semibold text-[#8ae234]">hactor@ubuntu</span>
             <span className="text-white">:</span>
-            <span className="font-semibold text-[#4a9eff]">~</span>
-            <span className="text-[#4a9eff]">$ </span>
+            <span className="font-semibold text-[#729fcf]">~</span>
+            <span className="text-[#FFFFFF]">$ </span>
             <span className="text-white">hactor members --list</span>
           </div>
         </div>
@@ -152,18 +158,18 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
               {selectedMember ? (
                 <>
                   <div>
-                    <span className="font-semibold text-[#ff3e3e]">
-                      kali@kali
+                    <span className="font-semibold text-[#8ae234]">
+                      hactor@ubuntu
                     </span>
                     <span className="text-white">:</span>
-                    <span className="font-semibold text-[#4a9eff]">~</span>
-                    <span className="text-[#4a9eff]">$ </span>
+                    <span className="font-semibold text-[#729fcf]">~</span>
+                    <span className="text-[#FFFFFF]">$ </span>
                     <span className="text-white">
                       hactor members --show {commandTarget}
                     </span>
                   </div>
 
-                  <div className="mt-3 rounded-lg border border-[rgba(74,158,255,0.24)] bg-[rgba(6,14,25,0.65)] p-3">
+                  <div className="mt-3 rounded-lg border border-[#e95420]/35 bg-[rgba(49,10,36,0.6)] p-3">
                     <div className="grid grid-cols-[140px_1fr] items-start gap-y-3">
                       <span className="text-white/45">Name</span>
                       <span className="text-white">
@@ -251,11 +257,11 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
                     }}
                     className={`grid w-full grid-cols-[auto_44px_minmax(140px,1fr)_minmax(160px,1fr)_minmax(180px,2fr)] items-center gap-x-3 border-l-2 px-2 py-1 text-left transition-colors duration-200 ${
                       isSelected
-                        ? "border-[#4a9eff] bg-[rgba(74,158,255,0.12)]"
-                        : "border-transparent hover:border-[#4a9eff] hover:bg-[rgba(74,158,255,0.08)]"
+                        ? "border-[#e95420] bg-[rgba(233,84,32,0.14)]"
+                        : "border-transparent hover:border-[#e95420] hover:bg-[rgba(233,84,32,0.08)]"
                     }`}
                   >
-                    <span className="text-[#4a9eff]">&nbsp;</span>
+                    <span className="text-[#e95420]">&nbsp;</span>
                     <span className="text-white/40">
                       [{String(index + 1).padStart(2, "0")}]
                     </span>
@@ -283,7 +289,7 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
 
         <div className="mt-4 border-t border-white/10 pt-3">
           <p className="font-mono text-[10px] text-white/40">
-            <span className="text-[#4a9eff]">OK</span> {filteredMembers.length}{" "}
+            <span className="text-[#8ae234]">OK</span> {filteredMembers.length}{" "}
             members found
           </p>
         </div>

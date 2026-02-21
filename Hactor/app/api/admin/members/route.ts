@@ -105,6 +105,7 @@ export async function GET(request: Request) {
       displayName: member.displayName,
       username: member.username,
       avatarUrl: member.avatarUrl,
+      activityFields: member.activityFields,
       discordJoinedAt: member.discordJoinedAt,
       isActive: member.isActive,
       fields: member.fields

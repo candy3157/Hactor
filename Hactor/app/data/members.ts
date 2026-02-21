@@ -10,6 +10,7 @@ export type MemberProfile = {
   name: string;
   handle: string;
   tags: MemberTag[];
+  activityFields: string | null;
 };
 
 const activityFieldLabelByCode: Record<string, string> = {
