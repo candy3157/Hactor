@@ -1,6 +1,5 @@
 import localFont from "next/font/local";
 import Link from "next/link";
-import { memberTagLabelFromField } from "@/app/data/members";
 import prisma from "@/lib/prisma";
 import ConstellationBackground from "../components/ConstellationBackground";
 import MembersTerminal from "./MembersTerminal";
@@ -41,22 +40,18 @@ export default async function MembersPage() {
         select: {
           fieldId: true,
           assignedAt: true,
-          field: {
-            select: {
-              code: true,
-              label: true,
-              isActive: true,
-            },
-          },
         },
       },
     },
   });
 
   const memberRows = members.map((member) => {
-    const activeFields = member.fields.filter((entry) => entry.field?.isActive);
-    const tags = activeFields.map((entry) =>
-      memberTagLabelFromField(entry.field.code, entry.field.label),
+    const activityFields = Array.from(
+      new Set(
+        member.fields
+          .map((entry) => entry.fieldId.trim())
+          .filter((entry) => entry.length > 0),
+      ),
     );
 
     return {
@@ -67,13 +62,7 @@ export default async function MembersPage() {
       displayName: member.displayName,
       avatarUrl: member.avatarUrl,
       isActive: member.isActive,
-      memberActivityFields: activeFields.map((entry) => ({
-        fieldId: entry.fieldId,
-        code: entry.field.code,
-        label: entry.field.label,
-        assignedAt: entry.assignedAt.toISOString(),
-      })),
-      tags,
+      activityFields,
     };
   });
 

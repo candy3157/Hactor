@@ -1,19 +1,7 @@
 "use client";
 
-import {
-  memberTagLabelFromField,
-  memberTagToneFromField,
-} from "@/app/data/members";
-import MemberTag from "@/app/components/main/members/MemberTag";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-
-type MemberActivityFieldRow = {
-  fieldId: number;
-  code: string;
-  label: string;
-  assignedAt: string;
-};
 
 type MemberRow = {
   id: string;
@@ -23,8 +11,7 @@ type MemberRow = {
   displayName: string;
   avatarUrl: string | null;
   isActive: boolean;
-  memberActivityFields: MemberActivityFieldRow[];
-  tags: string[];
+  activityFields: string[];
 };
 
 type MembersTerminalProps = {
@@ -38,7 +25,7 @@ const filterMembers = (members: MemberRow[], query: string) => {
   }
 
   return members.filter((member) => {
-    const haystack = [member.name, member.handle, member.tags.join(" ")]
+    const haystack = [member.name, member.handle, member.activityFields.join(" ")]
       .join(" ")
       .toLowerCase();
     return haystack.includes(normalized);
@@ -207,23 +194,9 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
                       </span>
 
                       <span className="text-white/45">Activity_fields</span>
-                      <span className="flex flex-wrap gap-2">
-                        {selectedMember.memberActivityFields.length ? (
-                          selectedMember.memberActivityFields.map((field) => (
-                            <MemberTag
-                              key={`${selectedMember.id}-${field.fieldId}`}
-                              tag={{
-                                label: memberTagLabelFromField(
-                                  field.code,
-                                  field.label,
-                                ),
-                                tone: memberTagToneFromField(
-                                  field.code,
-                                  field.label,
-                                ),
-                              }}
-                            />
-                          ))
+                      <span className="text-white">
+                        {selectedMember.activityFields.length ? (
+                          selectedMember.activityFields.join(", ")
                         ) : (
                           <span className="italic text-white/35">null</span>
                         )}
@@ -242,8 +215,8 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
           ) : (
             <div className="space-y-1 font-mono text-[13px]">
               {filteredMembers.map((member, index) => {
-                const tagLabel = member.tags.length
-                  ? member.tags.join(", ")
+                const activityFieldText = member.activityFields.length
+                  ? member.activityFields.join(", ")
                   : "-";
                 const isSelected = member.id === selectedMember?.id;
 
@@ -273,12 +246,12 @@ export default function MembersTerminal({ members }: MembersTerminalProps) {
                     </span>
                     <span
                       className={
-                        tagLabel === "-"
+                        activityFieldText === "-"
                           ? "min-w-0 truncate italic text-white/30"
                           : "min-w-0 truncate text-[rgba(251,191,36,0.9)]"
                       }
                     >
-                      {tagLabel}
+                      {activityFieldText}
                     </span>
                   </button>
                 );

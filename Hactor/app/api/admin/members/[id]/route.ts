@@ -8,9 +8,101 @@ type Payload = {
   displayName?: string;
   username?: string | null;
   isActive?: boolean;
+  activityFieldBadges?: Array<{ label?: string; color?: string }> | null;
   activityFields?: string | null;
-  fieldIds?: number[];
   discordJoinedAt?: string | null;
+};
+
+type BadgeColor = "red" | "blue" | "green";
+
+const toBadgeColor = (value: string | undefined): BadgeColor => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "red" || normalized === "green") {
+    return normalized;
+  }
+  return "blue";
+};
+
+const parseActivityFieldLabels = (value: string | null | undefined) => {
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      value
+        .split(/[\n,]+/)
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0),
+    ),
+  );
+};
+
+const parseActivityFieldBadges = (payload: Payload) => {
+  if (Array.isArray(payload.activityFieldBadges)) {
+    const deduped = new Map<string, { label: string; color: BadgeColor }>();
+    payload.activityFieldBadges.forEach((badge) => {
+      const label = badge.label?.trim().replace(/\s+/g, " ") ?? "";
+      if (!label) {
+        return;
+      }
+      deduped.set(label.toLowerCase(), {
+        label,
+        color: toBadgeColor(badge.color),
+      });
+    });
+    return Array.from(deduped.values());
+  }
+
+  if (typeof payload.activityFields === "string") {
+    return parseActivityFieldLabels(payload.activityFields).map((label) => ({
+      label,
+      color: "blue" as const,
+    }));
+  }
+
+  if (payload.activityFieldBadges === null || payload.activityFields === null) {
+    return [];
+  }
+
+  return null;
+};
+
+const toUniqueActivityFieldBadges = (
+  fields: Array<{ fieldId: string; fieldColor: string }>,
+) => {
+  const unique = new Set<string>();
+  const badges: Array<{ label: string; color: BadgeColor }> = [];
+
+  fields.forEach((entry) => {
+    const label = entry.fieldId.trim();
+    if (!label) {
+      return;
+    }
+    const key = label.toLowerCase();
+    if (unique.has(key)) {
+      return;
+    }
+    unique.add(key);
+    badges.push({
+      label,
+      color: toBadgeColor(entry.fieldColor),
+    });
+  });
+
+  return badges;
+};
+
+const toActivityFieldsText = (badges: Array<{ label: string }>) => {
+  const unique = Array.from(
+    new Set(
+      badges
+        .map((badge) => badge.label.trim())
+        .filter((value) => value.length > 0),
+    ),
+  );
+
+  return unique.length > 0 ? unique.join(", ") : null;
 };
 
 export async function PATCH(
@@ -47,9 +139,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, message: "Display name required" }, { status: 400 });
   }
 
-  const fieldIds = Array.isArray(payload.fieldIds)
-    ? Array.from(new Set(payload.fieldIds.filter((value) => Number.isInteger(value))))
-    : null;
+  const parsedFieldBadges = parseActivityFieldBadges(payload);
 
   const updated = await prisma.$transaction(async (tx) => {
     await tx.member.update({
@@ -58,12 +148,6 @@ export async function PATCH(
         displayName: payload.displayName?.trim(),
         username: payload.username?.trim() || null,
         isActive: typeof payload.isActive === "boolean" ? payload.isActive : undefined,
-        activityFields:
-          typeof payload.activityFields === "string"
-            ? payload.activityFields.trim() || null
-            : payload.activityFields === null
-              ? null
-              : undefined,
         discordJoinedAt: payload.discordJoinedAt
           ? new Date(payload.discordJoinedAt)
           : payload.discordJoinedAt === null
@@ -72,32 +156,39 @@ export async function PATCH(
       },
     });
 
-    if (fieldIds) {
+    if (parsedFieldBadges !== null) {
       await tx.memberActivityField.deleteMany({
         where: { memberId: id },
       });
 
-      if (fieldIds.length > 0) {
+      const valuesToSave = parsedFieldBadges;
+      if (valuesToSave.length > 0) {
         await tx.memberActivityField.createMany({
-          data: fieldIds.map((fieldId) => ({
+          data: valuesToSave.map((badge) => ({
             memberId: id,
-            fieldId,
+            fieldId: badge.label,
+            fieldColor: badge.color,
           })),
           skipDuplicates: true,
         });
       }
     }
 
-    const refreshed = await tx.member.findUniqueOrThrow({
+    return tx.member.findUniqueOrThrow({
       where: { id },
       include: {
         fields: {
-          include: { field: true },
+          orderBy: { assignedAt: "asc" },
+          select: {
+            fieldId: true,
+            fieldColor: true,
+          },
         },
       },
     });
-    return refreshed;
   });
+
+  const activityFieldBadges = toUniqueActivityFieldBadges(updated.fields);
 
   const response = {
     id: updated.id,
@@ -105,13 +196,10 @@ export async function PATCH(
     displayName: updated.displayName,
     username: updated.username,
     avatarUrl: updated.avatarUrl,
-    activityFields: updated.activityFields,
+    activityFields: toActivityFieldsText(activityFieldBadges),
+    activityFieldBadges,
     discordJoinedAt: updated.discordJoinedAt,
     isActive: updated.isActive,
-    fields: updated.fields.map((entry) => ({
-      fieldId: entry.fieldId,
-      label: entry.field.label,
-    })),
   };
 
   return NextResponse.json({ ok: true, member: response });

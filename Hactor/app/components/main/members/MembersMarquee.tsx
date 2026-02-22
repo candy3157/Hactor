@@ -14,10 +14,12 @@ export default function MembersMarquee({ members }: MembersMarqueeProps) {
   const secondTrackMembers = bottomRowMembers.length
     ? bottomRowMembers
     : firstTrackMembers;
+  const rowMaskClass =
+    "overflow-x-hidden overflow-y-visible py-px [-webkit-mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)] [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]";
 
   return (
     <div className="relative space-y-4 py-2">
-      <div className="overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+      <div className={rowMaskClass}>
         <div className="flex w-max flex-nowrap gap-4 will-change-transform animate-[ruby-marquee_30s_linear_infinite] hover:[animation-play-state:paused]">
           {marqueeCopies.map((copyIndex) => (
             <div
@@ -36,7 +38,7 @@ export default function MembersMarquee({ members }: MembersMarqueeProps) {
         </div>
       </div>
 
-      <div className="overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_12%,#000_88%,transparent)]">
+      <div className={rowMaskClass}>
         <div className="flex w-max flex-nowrap gap-4 will-change-transform animate-[ruby-marquee_34s_linear_infinite_reverse] hover:[animation-play-state:paused]">
           {marqueeCopies.map((copyIndex) => (
             <div

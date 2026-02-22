@@ -16,6 +16,14 @@ type Member = {
   discordJoinedAt: string | null;
   isActive: boolean;
   activityFields: string | null;
+  activityFieldBadges: ActivityFieldBadge[];
+};
+
+type BadgeColor = "red" | "blue" | "green";
+
+type ActivityFieldBadge = {
+  label: string;
+  color: BadgeColor;
 };
 
 type MemberDraft = {
@@ -23,7 +31,7 @@ type MemberDraft = {
   displayName: string;
   username: string;
   isActive: boolean;
-  activityFields: string;
+  activityFieldBadges: ActivityFieldBadge[];
 };
 
 const emptyDraft: MemberDraft = {
@@ -31,7 +39,7 @@ const emptyDraft: MemberDraft = {
   displayName: "",
   username: "",
   isActive: true,
-  activityFields: "",
+  activityFieldBadges: [],
 };
 
 const formatDate = (value: string | null) => {
@@ -43,10 +51,90 @@ const formatDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
+const normalizeActivityField = (value: string) =>
+  value.trim().replace(/\s+/g, " ");
+
+const toBadgeColor = (value: string | undefined): BadgeColor => {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === "red" || normalized === "green") {
+    return normalized;
+  }
+  return "blue";
+};
+
+const parseActivityFieldBadges = (
+  badges: ActivityFieldBadge[] | null | undefined,
+  fallbackText: string | null,
+) => {
+  if (Array.isArray(badges) && badges.length > 0) {
+    const unique = new Set<string>();
+    const parsed: ActivityFieldBadge[] = [];
+    badges.forEach((badge) => {
+      const label = normalizeActivityField(badge.label ?? "");
+      if (!label) {
+        return;
+      }
+      const key = label.toLowerCase();
+      if (unique.has(key)) {
+        return;
+      }
+      unique.add(key);
+      parsed.push({
+        label,
+        color: toBadgeColor(badge.color),
+      });
+    });
+    if (parsed.length > 0) {
+      return parsed;
+    }
+  }
+
+  if (!fallbackText) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      fallbackText
+        .split(/[,\n]+/)
+        .map(normalizeActivityField)
+        .filter((entry) => entry.length > 0),
+    ),
+  ).map((label) => ({
+    label,
+    color: "blue" as const,
+  }));
+};
+
+const mergeActivityField = (
+  fields: ActivityFieldBadge[],
+  rawValue: string,
+  color: BadgeColor,
+) => {
+  const next = normalizeActivityField(rawValue);
+  if (!next) {
+    return fields;
+  }
+
+  const existingIndex = fields.findIndex(
+    (field) => field.label.toLowerCase() === next.toLowerCase(),
+  );
+  if (existingIndex !== -1) {
+    return fields.map((field, index) =>
+      index === existingIndex ? { ...field, color } : field,
+    );
+  }
+
+  return [...fields, { label: next, color }];
+};
+
 export default function AdminUsersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState<MemberDraft>(emptyDraft);
+  const [activityFieldInput, setActivityFieldInput] = useState("");
+  const [activityFieldColorInput, setActivityFieldColorInput] =
+    useState<BadgeColor>("blue");
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -113,14 +201,56 @@ export default function AdminUsersPage() {
       displayName: selectedMember.displayName,
       username: selectedMember.username ?? "",
       isActive: selectedMember.isActive,
-      activityFields: selectedMember.activityFields ?? "",
+      activityFieldBadges: parseActivityFieldBadges(
+        selectedMember.activityFieldBadges,
+        selectedMember.activityFields,
+      ),
     });
     setJoinDate(
       selectedMember.discordJoinedAt
         ? new Date(selectedMember.discordJoinedAt)
         : null,
     );
+    setActivityFieldInput("");
   }, [selectedMember]);
+
+  const addActivityField = (rawValue: string, color: BadgeColor) => {
+    setDraft((prev) => ({
+      ...prev,
+      activityFieldBadges: mergeActivityField(
+        prev.activityFieldBadges,
+        rawValue,
+        color,
+      ),
+    }));
+  };
+
+  const removeActivityFieldAt = (targetIndex: number) => {
+    setDraft((prev) => ({
+      ...prev,
+      activityFieldBadges: prev.activityFieldBadges.filter(
+        (_, index) => index !== targetIndex,
+      ),
+    }));
+  };
+
+  const updateActivityFieldColor = (targetIndex: number, color: BadgeColor) => {
+    setDraft((prev) => ({
+      ...prev,
+      activityFieldBadges: prev.activityFieldBadges.map((badge, index) =>
+        index === targetIndex ? { ...badge, color } : badge,
+      ),
+    }));
+  };
+
+  const commitActivityFieldInput = () => {
+    const next = normalizeActivityField(activityFieldInput);
+    if (!next) {
+      return;
+    }
+    addActivityField(next, activityFieldColorInput);
+    setActivityFieldInput("");
+  };
 
   const handleSave = async () => {
     if (!selectedId) {
@@ -132,6 +262,11 @@ export default function AdminUsersPage() {
     }
     setIsLoading(true);
     setMessage(null);
+    const nextActivityFieldBadges = mergeActivityField(
+      draft.activityFieldBadges,
+      activityFieldInput,
+      activityFieldColorInput,
+    );
     try {
       const res = await fetch(`/api/admin/members/${selectedId}`, {
         method: "PATCH",
@@ -140,7 +275,7 @@ export default function AdminUsersPage() {
           displayName: draft.displayName,
           username: draft.username,
           isActive: draft.isActive,
-          activityFields: draft.activityFields,
+          activityFieldBadges: nextActivityFieldBadges,
           discordJoinedAt: joinDate ? joinDate.toISOString() : null,
         }),
       });
@@ -153,6 +288,13 @@ export default function AdminUsersPage() {
           member.id === data.member.id ? data.member : member,
         ),
       );
+      if (nextActivityFieldBadges.length !== draft.activityFieldBadges.length) {
+        setDraft((prev) => ({
+          ...prev,
+          activityFieldBadges: nextActivityFieldBadges,
+        }));
+      }
+      setActivityFieldInput("");
       setMessage("저장 완료");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "저장 실패");
@@ -229,7 +371,10 @@ export default function AdminUsersPage() {
                   Members
                 </p>
                 <span className="text-sm text-white/70">
-                  {memberQuery ? `${filteredMembers.length}/${members.length}` : members.length}명
+                  {memberQuery
+                    ? `${filteredMembers.length}/${members.length}`
+                    : members.length}
+                  명
                 </span>
               </div>
 
@@ -390,20 +535,95 @@ export default function AdminUsersPage() {
                       활동 분야
                     </span>
                     <p className="mt-2 text-[11px] text-white/45">
-                      자유 입력 (예: `Web, Reverse, Forensic`)
+                      태그의 색 지정, 직무 입력 후 Enter로 추가
                     </p>
-                    <input
-                      type="text"
-                      value={draft.activityFields}
-                      onChange={(event) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          activityFields: event.target.value,
-                        }))
-                      }
-                      placeholder="예: Web, Reverse, Crypto"
-                      className="mt-2 h-11 w-full rounded-full border border-white/10 bg-[#0f1210] px-4 text-sm text-white/80 placeholder:text-white/35 focus:border-white/30 focus:outline-none"
-                    />
+                    <div className="mt-2 rounded-2xl border border-white/10 bg-[#0f1210] px-3 py-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {draft.activityFieldBadges.map((badge, index) => (
+                          <span
+                            key={`${badge.label}-${index}`}
+                            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                              badge.color === "red"
+                                ? "border-[#f87171]/40 bg-[#ef4444]/18 text-[#fecaca]"
+                                : badge.color === "green"
+                                  ? "border-[#4ade80]/40 bg-[#22c55e]/18 text-[#bbf7d0]"
+                                  : "border-[#60a5fa]/40 bg-[#3b82f6]/18 text-[#bfdbfe]"
+                            }`}
+                          >
+                            <span>{badge.label}</span>
+                            <select
+                              value={badge.color}
+                              onChange={(event) =>
+                                updateActivityFieldColor(
+                                  index,
+                                  toBadgeColor(event.target.value),
+                                )
+                              }
+                              aria-label={`${badge.label} 색상`}
+                              className="h-5 rounded-md border border-white/20 bg-black/20 px-1 text-[10px] text-white/85 outline-none"
+                            >
+                              <option value="red">R</option>
+                              <option value="blue">B</option>
+                              <option value="green">G</option>
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => removeActivityFieldAt(index)}
+                              aria-label={`${badge.label} 삭제`}
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white/85 transition hover:bg-white/20 hover:text-white"
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                        <select
+                          value={activityFieldColorInput}
+                          onChange={(event) =>
+                            setActivityFieldColorInput(
+                              toBadgeColor(event.target.value),
+                            )
+                          }
+                          aria-label="새 직무 색상"
+                          className="h-8 rounded-md border border-white/15 bg-black/20 px-2 text-xs text-white/85 outline-none"
+                        >
+                          <option value="red">빨강</option>
+                          <option value="blue">파랑</option>
+                          <option value="green">초록</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={activityFieldInput}
+                          onChange={(event) =>
+                            setActivityFieldInput(event.target.value)
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              commitActivityFieldInput();
+                              return;
+                            }
+
+                            if (
+                              event.key === "Backspace" &&
+                              activityFieldInput.length === 0 &&
+                              draft.activityFieldBadges.length > 0
+                            ) {
+                              event.preventDefault();
+                              removeActivityFieldAt(
+                                draft.activityFieldBadges.length - 1,
+                              );
+                            }
+                          }}
+                          onBlur={commitActivityFieldInput}
+                          placeholder={
+                            draft.activityFieldBadges.length === 0
+                              ? "예: Web, Reverse, Crypto"
+                              : "직무 추가"
+                          }
+                          className="h-8 min-w-[140px] flex-1 bg-transparent px-1 text-sm text-white/80 placeholder:text-white/35 focus:outline-none"
+                        />
+                      </div>
+                    </div>
                   </label>
 
                   <label className="block">
@@ -543,4 +763,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-

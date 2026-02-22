@@ -1,21 +1,22 @@
 import type { MemberProfile } from "@/app/data/members";
-import { memberTagToneFromField } from "@/app/data/members";
-import { memberTagLabelFromField } from "@/app/data/members";
+import type { MemberBadgeColor } from "@/app/data/members";
 import prisma from "@/lib/prisma";
 
-const parseActivityFields = (value: string | null): string[] => {
-  if (!value) {
-    return [];
-  }
-
-  return Array.from(
+const normalizeFieldIds = (fieldIds: string[]) =>
+  Array.from(
     new Set(
-      value
-        .split(/[,\n]/)
+      fieldIds
         .map((entry) => entry.trim())
         .filter((entry) => entry.length > 0),
     ),
   );
+
+const toBadgeColor = (value: string): MemberBadgeColor => {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "red" || normalized === "green") {
+    return normalized;
+  }
+  return "blue";
 };
 
 export const getMarqueeMembers = async (): Promise<MemberProfile[]> => {
@@ -29,44 +30,37 @@ export const getMarqueeMembers = async (): Promise<MemberProfile[]> => {
       id: true,
       displayName: true,
       username: true,
-      activityFields: true,
       fields: {
         orderBy: { assignedAt: "asc" },
         select: {
-          field: {
-            select: {
-              code: true,
-              label: true,
-              isActive: true,
-            },
-          },
+          fieldId: true,
+          fieldColor: true,
         },
       },
     },
   });
 
   return rows.map((member) => {
-    const parsedFields = parseActivityFields(member.activityFields);
-    const tags =
-      parsedFields.length > 0
-        ? parsedFields.map((fieldLabel) => ({
-            label: memberTagLabelFromField(fieldLabel, fieldLabel),
-            tone: memberTagToneFromField(fieldLabel, fieldLabel),
-          }))
-        : member.fields
-            .filter((entry) => entry.field.isActive)
-            .map((entry) => ({
-              label: memberTagLabelFromField(entry.field.code, entry.field.label),
-              tone: memberTagToneFromField(entry.field.code, entry.field.label),
-            }));
-    const activityFieldsText = member.activityFields?.trim() || null;
+    const normalizedFieldIds = normalizeFieldIds(
+      member.fields.map((entry) => entry.fieldId),
+    );
+    const activityFieldBadges = normalizedFieldIds.map((fieldId) => {
+      const source = member.fields.find(
+        (entry) => entry.fieldId.trim().toLowerCase() === fieldId.toLowerCase(),
+      );
+      return {
+        label: fieldId,
+        color: toBadgeColor(source?.fieldColor ?? "blue"),
+      };
+    });
 
     return {
       id: member.id,
       name: member.displayName,
       handle: member.username ?? "",
-      tags,
-      activityFields: activityFieldsText,
+      activityFields:
+        normalizedFieldIds.length > 0 ? normalizedFieldIds.join(", ") : null,
+      activityFieldBadges,
     };
   });
 };
