@@ -1,6 +1,6 @@
 import type { MemberProfile } from "@/app/data/members";
 import type { MemberBadgeColor } from "@/app/data/members";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma-public";
 
 const normalizeFieldIds = (fieldIds: string[]) =>
   Array.from(

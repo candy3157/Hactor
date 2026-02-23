@@ -100,6 +100,7 @@ const normalizeActivity = (activity: ActivityFromApi): Activity => {
 export default function AdminActivitiesPage() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [draft, setDraft] = useState<Activity>(emptyDraft);
   const [imageUrlsInput, setImageUrlsInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -154,6 +155,7 @@ export default function AdminActivitiesPage() {
 
         if (next.length > 0) {
           setSelectedId(next[0].id);
+          setIsCreatingNew(false);
         }
       } catch (error) {
         setMessage(
@@ -171,13 +173,17 @@ export default function AdminActivitiesPage() {
       return;
     }
 
+    if (isCreatingNew) {
+      return;
+    }
+
     if (
       !selectedId ||
       !filteredActivities.some((activity) => activity.id === selectedId)
     ) {
       setSelectedId(filteredActivities[0].id);
     }
-  }, [filteredActivities, selectedId]);
+  }, [filteredActivities, selectedId, isCreatingNew]);
 
   useEffect(() => {
     if (selected) {
@@ -218,6 +224,7 @@ export default function AdminActivitiesPage() {
       setActivities((prev) =>
         prev.map((item) => (item.id === nextActivity.id ? nextActivity : item)),
       );
+      setIsCreatingNew(false);
       setDraft(nextActivity);
       setImageUrlsInput(nextActivity.imageUrls.join("\n"));
       setMessage("Updated.");
@@ -251,6 +258,7 @@ export default function AdminActivitiesPage() {
 
       setActivities((prev) => [nextActivity, ...prev]);
       setSelectedId(nextActivity.id);
+      setIsCreatingNew(false);
       setDraft(nextActivity);
       setImageUrlsInput(nextActivity.imageUrls.join("\n"));
       setMessage("Created.");
@@ -288,11 +296,13 @@ export default function AdminActivitiesPage() {
 
       if (nextActivities.length > 0) {
         const next = nextActivities[0];
+        setIsCreatingNew(false);
         setSelectedId(next.id);
         setDraft(next);
         setImageUrlsInput(next.imageUrls.join("\n"));
       } else {
         const nextDate = toDateInputValue(new Date());
+        setIsCreatingNew(true);
         setSelectedId(null);
         setDraft({
           ...emptyDraft,
@@ -315,6 +325,7 @@ export default function AdminActivitiesPage() {
   const handleNew = () => {
     const nextDate = toDateInputValue(new Date());
 
+    setIsCreatingNew(true);
     setSelectedId(null);
     setDraft({
       ...emptyDraft,
@@ -429,7 +440,10 @@ export default function AdminActivitiesPage() {
                     <button
                       key={activity.id}
                       type="button"
-                      onClick={() => setSelectedId(activity.id)}
+                      onClick={() => {
+                        setIsCreatingNew(false);
+                        setSelectedId(activity.id);
+                      }}
                       className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
                         activity.id === selectedId
                           ? "border-white/30 bg-white/10"

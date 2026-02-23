@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma-admin";
 import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";

@@ -1,4 +1,4 @@
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma-public";
 
 export type HomeActivityItem = {
   id: string;

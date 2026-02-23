@@ -2,7 +2,7 @@ import localFont from "next/font/local";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
+import prisma from "@/lib/prisma-public";
 import ConstellationBackground from "../../components/ConstellationBackground";
 
 const display = localFont({
