@@ -164,7 +164,7 @@ export default function BrutalistActivitiesSection({
         <h2 className="mt-3 font-[var(--font-display)] text-xl tracking-[0.12em] text-white">
           Activities History
         </h2>
-        <p className="mt-1 text-xs text-white/50">HACTOR 활동</p>
+        <p className="mt-1 text-xs text-white/50">HACTOR 활동 기록 타임라인</p>
       </div>
 
       {history.years.length > 0 ? (

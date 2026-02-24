@@ -19,7 +19,13 @@ type Member = {
   activityFieldBadges: ActivityFieldBadge[];
 };
 
-type BadgeColor = "red" | "blue" | "green";
+type BadgeColor =
+  | "red"
+  | "blue"
+  | "green"
+  | "purple"
+  | "orange"
+  | "gray";
 
 type ActivityFieldBadge = {
   label: string;
@@ -54,12 +60,33 @@ const formatDate = (value: string | null) => {
 const normalizeActivityField = (value: string) =>
   value.trim().replace(/\s+/g, " ");
 
+const badgeColors: BadgeColor[] = [
+  "red",
+  "blue",
+  "green",
+  "purple",
+  "orange",
+  "gray",
+];
+
 const toBadgeColor = (value: string | undefined): BadgeColor => {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === "red" || normalized === "green") {
-    return normalized;
+  if (
+    normalized &&
+    badgeColors.includes(normalized as BadgeColor)
+  ) {
+    return normalized as BadgeColor;
   }
   return "blue";
+};
+
+const badgeToneClassByColor: Record<BadgeColor, string> = {
+  red: "border-[#f87171]/40 bg-[#ef4444]/18 text-[#fecaca]",
+  blue: "border-[#60a5fa]/40 bg-[#3b82f6]/18 text-[#bfdbfe]",
+  green: "border-[#4ade80]/40 bg-[#22c55e]/18 text-[#bbf7d0]",
+  purple: "border-[#c084fc]/40 bg-[#a855f7]/18 text-[#e9d5ff]",
+  orange: "border-[#fb923c]/40 bg-[#f97316]/18 text-[#fed7aa]",
+  gray: "border-[#9ca3af]/40 bg-[#6b7280]/18 text-[#e5e7eb]",
 };
 
 const parseActivityFieldBadges = (
@@ -543,11 +570,7 @@ export default function AdminUsersPage() {
                           <span
                             key={`${badge.label}-${index}`}
                             className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
-                              badge.color === "red"
-                                ? "border-[#f87171]/40 bg-[#ef4444]/18 text-[#fecaca]"
-                                : badge.color === "green"
-                                  ? "border-[#4ade80]/40 bg-[#22c55e]/18 text-[#bbf7d0]"
-                                  : "border-[#60a5fa]/40 bg-[#3b82f6]/18 text-[#bfdbfe]"
+                              badgeToneClassByColor[badge.color]
                             }`}
                           >
                             <span>{badge.label}</span>
@@ -565,6 +588,9 @@ export default function AdminUsersPage() {
                               <option value="red">R</option>
                               <option value="blue">B</option>
                               <option value="green">G</option>
+                              <option value="purple">P</option>
+                              <option value="orange">O</option>
+                              <option value="gray">GY</option>
                             </select>
                             <button
                               type="button"
@@ -589,6 +615,9 @@ export default function AdminUsersPage() {
                           <option value="red">빨강</option>
                           <option value="blue">파랑</option>
                           <option value="green">초록</option>
+                          <option value="purple">보라</option>
+                          <option value="orange">주황</option>
+                          <option value="gray">회색</option>
                         </select>
                         <input
                           type="text"

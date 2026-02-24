@@ -13,11 +13,23 @@ type Payload = {
   discordJoinedAt?: string | null;
 };
 
-type BadgeColor = "red" | "blue" | "green";
+type BadgeColor =
+  | "red"
+  | "blue"
+  | "green"
+  | "purple"
+  | "orange"
+  | "gray";
 
 const toBadgeColor = (value: string | undefined): BadgeColor => {
   const normalized = value?.trim().toLowerCase();
-  if (normalized === "red" || normalized === "green") {
+  if (
+    normalized === "red" ||
+    normalized === "green" ||
+    normalized === "purple" ||
+    normalized === "orange" ||
+    normalized === "gray"
+  ) {
     return normalized;
   }
   return "blue";

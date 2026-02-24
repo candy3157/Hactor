@@ -4,11 +4,23 @@ import { requireAdminSession } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 
-type BadgeColor = "red" | "blue" | "green";
+type BadgeColor =
+  | "red"
+  | "blue"
+  | "green"
+  | "purple"
+  | "orange"
+  | "gray";
 
 const toBadgeColor = (value: string): BadgeColor => {
   const normalized = value.trim().toLowerCase();
-  if (normalized === "red" || normalized === "green") {
+  if (
+    normalized === "red" ||
+    normalized === "green" ||
+    normalized === "purple" ||
+    normalized === "orange" ||
+    normalized === "gray"
+  ) {
     return normalized;
   }
   return "blue";

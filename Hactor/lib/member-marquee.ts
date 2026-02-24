@@ -13,7 +13,13 @@ const normalizeFieldIds = (fieldIds: string[]) =>
 
 const toBadgeColor = (value: string): MemberBadgeColor => {
   const normalized = value.trim().toLowerCase();
-  if (normalized === "red" || normalized === "green") {
+  if (
+    normalized === "red" ||
+    normalized === "green" ||
+    normalized === "purple" ||
+    normalized === "orange" ||
+    normalized === "gray"
+  ) {
     return normalized;
   }
   return "blue";
