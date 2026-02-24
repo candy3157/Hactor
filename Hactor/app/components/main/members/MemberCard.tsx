@@ -42,15 +42,17 @@ export default function MemberCard({ member }: MemberCardProps) {
           {primaryRoleBadge ? (
             <div className="flex items-center gap-1.5">
               <span
-                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] ${roleToneClass}`}
+                className={`group inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold tracking-[0.03em] transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:brightness-110 ${roleToneClass}`}
               >
-                <span className={`h-1 w-1 rounded-full ${roleDotClass}`} />
+                <span
+                  className={`h-1 w-1 rounded-full transition-transform duration-200 group-hover:scale-125 ${roleDotClass}`}
+                />
                 <span className="line-clamp-2 max-w-[130px] whitespace-normal text-left leading-[1.15]">
                   {primaryRoleBadge.label}
                 </span>
               </span>
               {extraRoleCount > 0 ? (
-                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/75">
+                <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2 py-1 text-[10px] font-semibold text-white/75 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:border-white/25 hover:bg-white/15 hover:text-white">
                   +{extraRoleCount}
                 </span>
               ) : null}
