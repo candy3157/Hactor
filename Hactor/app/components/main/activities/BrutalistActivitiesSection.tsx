@@ -119,7 +119,10 @@ type ActivityYearAccordionProps = {
   openByDefault: boolean;
 };
 
-function ActivityYearAccordion({ yearGroup, openByDefault }: ActivityYearAccordionProps) {
+function ActivityYearAccordion({
+  yearGroup,
+  openByDefault,
+}: ActivityYearAccordionProps) {
   return (
     <details
       open={openByDefault}
@@ -161,9 +164,7 @@ export default function BrutalistActivitiesSection({
         <h2 className="mt-3 font-[var(--font-display)] text-xl tracking-[0.12em] text-white">
           Activities History
         </h2>
-        <p className="mt-1 text-xs text-white/50">
-          관리자 페이지에서 관리되는 활동 기록 타임라인입니다.
-        </p>
+        <p className="mt-1 text-xs text-white/50">HACTOR 활동</p>
       </div>
 
       {history.years.length > 0 ? (
@@ -178,7 +179,8 @@ export default function BrutalistActivitiesSection({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-white/15 bg-[rgba(18,18,24,0.45)] p-6 text-center text-sm text-white/45">
-          아직 등록된 활동 기록이 없습니다. 관리자 페이지에서 활동을 추가해 주세요.
+          아직 등록된 활동 기록이 없습니다. 관리자 페이지에서 활동을 추가해
+          주세요.
         </div>
       )}
 
