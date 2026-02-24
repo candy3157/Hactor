@@ -1,10 +1,4 @@
-export type MemberBadgeColor =
-  | "red"
-  | "blue"
-  | "green"
-  | "purple"
-  | "orange"
-  | "gray";
+import type { MemberBadgeColor } from "@/lib/member-badge-color";
 
 export type MemberFieldBadge = {
   label: string;

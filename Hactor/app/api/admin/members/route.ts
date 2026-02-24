@@ -1,36 +1,18 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma-admin";
 import { requireAdminSession } from "@/lib/admin-auth";
+import {
+  normalizeMemberBadgeColor,
+  type MemberBadgeColor,
+} from "@/lib/member-badge-color";
 
 export const runtime = "nodejs";
-
-type BadgeColor =
-  | "red"
-  | "blue"
-  | "green"
-  | "purple"
-  | "orange"
-  | "gray";
-
-const toBadgeColor = (value: string): BadgeColor => {
-  const normalized = value.trim().toLowerCase();
-  if (
-    normalized === "red" ||
-    normalized === "green" ||
-    normalized === "purple" ||
-    normalized === "orange" ||
-    normalized === "gray"
-  ) {
-    return normalized;
-  }
-  return "blue";
-};
 
 const toUniqueActivityFieldBadges = (
   fields: Array<{ fieldId: string; fieldColor: string }>,
 ) => {
   const unique = new Set<string>();
-  const badges: Array<{ label: string; color: BadgeColor }> = [];
+  const badges: Array<{ label: string; color: MemberBadgeColor }> = [];
 
   fields.forEach((entry) => {
     const label = entry.fieldId.trim();
@@ -44,7 +26,7 @@ const toUniqueActivityFieldBadges = (
     unique.add(key);
     badges.push({
       label,
-      color: toBadgeColor(entry.fieldColor),
+      color: normalizeMemberBadgeColor(entry.fieldColor),
     });
   });
 

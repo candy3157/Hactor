@@ -2,6 +2,11 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma-admin";
 import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
+import {
+  DEFAULT_MEMBER_BADGE_COLOR,
+  normalizeMemberBadgeColor,
+  type MemberBadgeColor,
+} from "@/lib/member-badge-color";
 
 export const runtime = "nodejs";
 
@@ -12,28 +17,6 @@ type Payload = {
   activityFieldBadges?: Array<{ label?: string; color?: string }> | null;
   activityFields?: string | null;
   discordJoinedAt?: string | null;
-};
-
-type BadgeColor =
-  | "red"
-  | "blue"
-  | "green"
-  | "purple"
-  | "orange"
-  | "gray";
-
-const toBadgeColor = (value: string | undefined): BadgeColor => {
-  const normalized = value?.trim().toLowerCase();
-  if (
-    normalized === "red" ||
-    normalized === "green" ||
-    normalized === "purple" ||
-    normalized === "orange" ||
-    normalized === "gray"
-  ) {
-    return normalized;
-  }
-  return "blue";
 };
 
 const parseActivityFieldLabels = (value: string | null | undefined) => {
@@ -53,7 +36,7 @@ const parseActivityFieldLabels = (value: string | null | undefined) => {
 
 const parseActivityFieldBadges = (payload: Payload) => {
   if (Array.isArray(payload.activityFieldBadges)) {
-    const deduped = new Map<string, { label: string; color: BadgeColor }>();
+    const deduped = new Map<string, { label: string; color: MemberBadgeColor }>();
     payload.activityFieldBadges.forEach((badge) => {
       const label = badge.label?.trim().replace(/\s+/g, " ") ?? "";
       if (!label) {
@@ -61,7 +44,7 @@ const parseActivityFieldBadges = (payload: Payload) => {
       }
       deduped.set(label.toLowerCase(), {
         label,
-        color: toBadgeColor(badge.color),
+        color: normalizeMemberBadgeColor(badge.color),
       });
     });
     return Array.from(deduped.values());
@@ -70,7 +53,7 @@ const parseActivityFieldBadges = (payload: Payload) => {
   if (typeof payload.activityFields === "string") {
     return parseActivityFieldLabels(payload.activityFields).map((label) => ({
       label,
-      color: "blue" as const,
+      color: DEFAULT_MEMBER_BADGE_COLOR,
     }));
   }
 
@@ -85,7 +68,7 @@ const toUniqueActivityFieldBadges = (
   fields: Array<{ fieldId: string; fieldColor: string }>,
 ) => {
   const unique = new Set<string>();
-  const badges: Array<{ label: string; color: BadgeColor }> = [];
+  const badges: Array<{ label: string; color: MemberBadgeColor }> = [];
 
   fields.forEach((entry) => {
     const label = entry.fieldId.trim();
@@ -99,7 +82,7 @@ const toUniqueActivityFieldBadges = (
     unique.add(key);
     badges.push({
       label,
-      color: toBadgeColor(entry.fieldColor),
+      color: normalizeMemberBadgeColor(entry.fieldColor),
     });
   });
 

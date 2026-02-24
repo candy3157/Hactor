@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminSidebar from "@/app/components/AdminSidebar";
 import ConfirmDangerModal from "@/app/components/admin/modals/ConfirmDangerModal";
+import {
+  DEFAULT_MEMBER_BADGE_COLOR,
+  MEMBER_BADGE_COLORS,
+  MEMBER_BADGE_COLOR_LABEL_KO,
+  MEMBER_BADGE_COLOR_SHORT_LABEL,
+  normalizeMemberBadgeColor,
+  type MemberBadgeColor,
+} from "@/lib/member-badge-color";
 import DatePicker from "react-datepicker";
 import { ko } from "date-fns/locale";
 import "react-datepicker/dist/react-datepicker.css";
@@ -19,17 +27,9 @@ type Member = {
   activityFieldBadges: ActivityFieldBadge[];
 };
 
-type BadgeColor =
-  | "red"
-  | "blue"
-  | "green"
-  | "purple"
-  | "orange"
-  | "gray";
-
 type ActivityFieldBadge = {
   label: string;
-  color: BadgeColor;
+  color: MemberBadgeColor;
 };
 
 type MemberDraft = {
@@ -60,27 +60,7 @@ const formatDate = (value: string | null) => {
 const normalizeActivityField = (value: string) =>
   value.trim().replace(/\s+/g, " ");
 
-const badgeColors: BadgeColor[] = [
-  "red",
-  "blue",
-  "green",
-  "purple",
-  "orange",
-  "gray",
-];
-
-const toBadgeColor = (value: string | undefined): BadgeColor => {
-  const normalized = value?.trim().toLowerCase();
-  if (
-    normalized &&
-    badgeColors.includes(normalized as BadgeColor)
-  ) {
-    return normalized as BadgeColor;
-  }
-  return "blue";
-};
-
-const badgeToneClassByColor: Record<BadgeColor, string> = {
+const badgeToneClassByColor: Record<MemberBadgeColor, string> = {
   red: "border-[#f87171]/40 bg-[#ef4444]/18 text-[#fecaca]",
   blue: "border-[#60a5fa]/40 bg-[#3b82f6]/18 text-[#bfdbfe]",
   green: "border-[#4ade80]/40 bg-[#22c55e]/18 text-[#bbf7d0]",
@@ -108,7 +88,7 @@ const parseActivityFieldBadges = (
       unique.add(key);
       parsed.push({
         label,
-        color: toBadgeColor(badge.color),
+        color: normalizeMemberBadgeColor(badge.color),
       });
     });
     if (parsed.length > 0) {
@@ -129,14 +109,14 @@ const parseActivityFieldBadges = (
     ),
   ).map((label) => ({
     label,
-    color: "blue" as const,
+    color: DEFAULT_MEMBER_BADGE_COLOR,
   }));
 };
 
 const mergeActivityField = (
   fields: ActivityFieldBadge[],
   rawValue: string,
-  color: BadgeColor,
+  color: MemberBadgeColor,
 ) => {
   const next = normalizeActivityField(rawValue);
   if (!next) {
@@ -161,7 +141,7 @@ export default function AdminUsersPage() {
   const [draft, setDraft] = useState<MemberDraft>(emptyDraft);
   const [activityFieldInput, setActivityFieldInput] = useState("");
   const [activityFieldColorInput, setActivityFieldColorInput] =
-    useState<BadgeColor>("blue");
+    useState<MemberBadgeColor>(DEFAULT_MEMBER_BADGE_COLOR);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -241,7 +221,7 @@ export default function AdminUsersPage() {
     setActivityFieldInput("");
   }, [selectedMember]);
 
-  const addActivityField = (rawValue: string, color: BadgeColor) => {
+  const addActivityField = (rawValue: string, color: MemberBadgeColor) => {
     setDraft((prev) => ({
       ...prev,
       activityFieldBadges: mergeActivityField(
@@ -261,7 +241,10 @@ export default function AdminUsersPage() {
     }));
   };
 
-  const updateActivityFieldColor = (targetIndex: number, color: BadgeColor) => {
+  const updateActivityFieldColor = (
+    targetIndex: number,
+    color: MemberBadgeColor,
+  ) => {
     setDraft((prev) => ({
       ...prev,
       activityFieldBadges: prev.activityFieldBadges.map((badge, index) =>
@@ -579,18 +562,17 @@ export default function AdminUsersPage() {
                               onChange={(event) =>
                                 updateActivityFieldColor(
                                   index,
-                                  toBadgeColor(event.target.value),
+                                  normalizeMemberBadgeColor(event.target.value),
                                 )
                               }
                               aria-label={`${badge.label} 색상`}
                               className="h-5 rounded-md border border-white/20 bg-black/20 px-1 text-[10px] text-white/85 outline-none"
                             >
-                              <option value="red">R</option>
-                              <option value="blue">B</option>
-                              <option value="green">G</option>
-                              <option value="purple">P</option>
-                              <option value="orange">O</option>
-                              <option value="gray">GY</option>
+                              {MEMBER_BADGE_COLORS.map((color) => (
+                                <option key={color} value={color}>
+                                  {MEMBER_BADGE_COLOR_SHORT_LABEL[color]}
+                                </option>
+                              ))}
                             </select>
                             <button
                               type="button"
@@ -606,18 +588,17 @@ export default function AdminUsersPage() {
                           value={activityFieldColorInput}
                           onChange={(event) =>
                             setActivityFieldColorInput(
-                              toBadgeColor(event.target.value),
+                              normalizeMemberBadgeColor(event.target.value),
                             )
                           }
                           aria-label="새 직무 색상"
                           className="h-8 rounded-md border border-white/15 bg-black/20 px-2 text-xs text-white/85 outline-none"
                         >
-                          <option value="red">빨강</option>
-                          <option value="blue">파랑</option>
-                          <option value="green">초록</option>
-                          <option value="purple">보라</option>
-                          <option value="orange">주황</option>
-                          <option value="gray">회색</option>
+                          {MEMBER_BADGE_COLORS.map((color) => (
+                            <option key={color} value={color}>
+                              {MEMBER_BADGE_COLOR_LABEL_KO[color]}
+                            </option>
+                          ))}
                         </select>
                         <input
                           type="text"

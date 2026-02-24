@@ -1,4 +1,5 @@
 import type { MemberProfile } from "@/app/data/members";
+import type { MemberBadgeColor } from "@/lib/member-badge-color";
 
 type MemberCardProps = {
   member: MemberProfile;
@@ -7,7 +8,7 @@ type MemberCardProps = {
 export default function MemberCard({ member }: MemberCardProps) {
   const primaryRoleBadge = member.activityFieldBadges[0] ?? null;
   const extraRoleCount = Math.max(0, member.activityFieldBadges.length - 1);
-  const roleToneClassByColor = {
+  const roleToneClassByColor: Record<MemberBadgeColor, string> = {
     red: "border-[#f87171]/45 bg-[#ef4444]/18 text-[#fecaca] [box-shadow:0_0_8px_rgba(239,68,68,0.22),inset_0_0_6px_rgba(248,113,113,0.12)]",
     blue: "border-[#60a5fa]/45 bg-[#3b82f6]/18 text-[#bfdbfe] [box-shadow:0_0_8px_rgba(59,130,246,0.22),inset_0_0_6px_rgba(96,165,250,0.12)]",
     green:
@@ -17,15 +18,15 @@ export default function MemberCard({ member }: MemberCardProps) {
     orange:
       "border-[#fb923c]/45 bg-[#f97316]/18 text-[#fed7aa] [box-shadow:0_0_8px_rgba(249,115,22,0.22),inset_0_0_6px_rgba(251,146,60,0.12)]",
     gray: "border-[#9ca3af]/45 bg-[#6b7280]/18 text-[#e5e7eb] [box-shadow:0_0_8px_rgba(107,114,128,0.22),inset_0_0_6px_rgba(156,163,175,0.12)]",
-  } as const;
-  const roleDotClassByColor = {
+  };
+  const roleDotClassByColor: Record<MemberBadgeColor, string> = {
     red: "bg-[#fca5a5]",
     blue: "bg-[#93c5fd]",
     green: "bg-[#86efac]",
     purple: "bg-[#d8b4fe]",
     orange: "bg-[#fdba74]",
     gray: "bg-[#d1d5db]",
-  } as const;
+  };
   const roleToneClass = primaryRoleBadge
     ? roleToneClassByColor[primaryRoleBadge.color]
     : "";

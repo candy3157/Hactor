@@ -1,5 +1,5 @@
 import type { MemberProfile } from "@/app/data/members";
-import type { MemberBadgeColor } from "@/app/data/members";
+import { normalizeMemberBadgeColor } from "@/lib/member-badge-color";
 import prisma from "@/lib/prisma-public";
 
 const normalizeFieldIds = (fieldIds: string[]) =>
@@ -10,20 +10,6 @@ const normalizeFieldIds = (fieldIds: string[]) =>
         .filter((entry) => entry.length > 0),
     ),
   );
-
-const toBadgeColor = (value: string): MemberBadgeColor => {
-  const normalized = value.trim().toLowerCase();
-  if (
-    normalized === "red" ||
-    normalized === "green" ||
-    normalized === "purple" ||
-    normalized === "orange" ||
-    normalized === "gray"
-  ) {
-    return normalized;
-  }
-  return "blue";
-};
 
 export const getMarqueeMembers = async (): Promise<MemberProfile[]> => {
   const rows = await prisma.member.findMany({
@@ -56,7 +42,7 @@ export const getMarqueeMembers = async (): Promise<MemberProfile[]> => {
       );
       return {
         label: fieldId,
-        color: toBadgeColor(source?.fieldColor ?? "blue"),
+        color: normalizeMemberBadgeColor(source?.fieldColor),
       };
     });
 
