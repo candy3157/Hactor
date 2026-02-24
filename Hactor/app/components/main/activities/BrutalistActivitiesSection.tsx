@@ -126,18 +126,20 @@ function ActivityYearAccordion({
   return (
     <details
       open={openByDefault}
-      className="group overflow-hidden rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.72)] [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)] open:border-emerald-300/30"
+      className="group overflow-hidden rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.72)] transition-all duration-200 hover:border-emerald-300/35 hover:bg-[rgba(24,24,32,0.78)] hover:[box-shadow:0_14px_32px_rgba(16,185,129,0.08),inset_0_1px_0_rgba(255,255,255,0.04)] [box-shadow:inset_0_1px_0_rgba(255,255,255,0.03)] open:border-emerald-300/30"
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 sm:px-5 [&::-webkit-details-marker]:hidden">
-        <h3 className="text-lg font-semibold text-white">{yearGroup.year}</h3>
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[10px] text-white/60 transition-transform duration-200 group-open:rotate-180">
+        <h3 className="text-lg font-semibold text-white transition-colors duration-200 group-hover:text-emerald-100">
+          {yearGroup.year}
+        </h3>
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-[10px] text-white/60 transition-all duration-200 group-hover:border-emerald-200/40 group-hover:bg-emerald-200/10 group-hover:text-emerald-100 group-open:rotate-180">
           v
         </span>
       </summary>
 
       <div className="px-4 pb-5 sm:px-5">
         <div className="relative pl-8">
-          <div className="pointer-events-none absolute left-[11px] top-1 bottom-1 w-px bg-gradient-to-b from-emerald-300/65 via-emerald-200/35 to-transparent" />
+          <div className="pointer-events-none absolute left-[11px] top-1 bottom-1 w-px bg-gradient-to-b from-emerald-300/65 via-emerald-200/35 to-transparent transition-all duration-200 group-hover:from-emerald-200/80 group-hover:via-emerald-200/45" />
 
           <ol className="space-y-4">
             {yearGroup.items.map((activity) => (

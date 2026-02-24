@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma-admin";
 import { requireAdminSession, requireSameOrigin } from "@/lib/admin-auth";
@@ -214,6 +215,9 @@ export async function PATCH(
     isActive: updated.isActive,
   };
 
+  revalidatePath("/");
+  revalidatePath("/members");
+
   return NextResponse.json({ ok: true, member: response });
 }
 
@@ -237,6 +241,9 @@ export async function DELETE(
   }
 
   await prisma.member.delete({ where: { id } });
+
+  revalidatePath("/");
+  revalidatePath("/members");
 
   return NextResponse.json({ ok: true });
 }
