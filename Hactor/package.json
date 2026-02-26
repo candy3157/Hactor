@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/patch-prisma-client.cjs",
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "npm run prisma:generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate",
-    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate && node scripts/patch-prisma-client.cjs",
+    "prisma:generate": "prisma generate && node scripts/patch-prisma-client.cjs",
     "prisma:generate:types": "prisma generate --no-engine"
   },
   "dependencies": {

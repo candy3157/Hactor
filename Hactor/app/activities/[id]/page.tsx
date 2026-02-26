@@ -4,6 +4,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma-public";
 import ConstellationBackground from "../../components/ConstellationBackground";
+import ActivityGallery from "./ActivityGallery";
 
 const display = localFont({
   src: [
@@ -179,31 +180,7 @@ export default async function ActivityDetailPage({
                   <h2 className="text-[11px] uppercase tracking-[0.24em] text-[#7a2a86]">
                     Gallery
                   </h2>
-                  {imageUrls.length > 0 ? (
-                    <>
-                      <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                        {imageUrls.map((url, index) => (
-                          <figure key={`${url}-${index}`} className="space-y-2">
-                            <Image
-                              src={url}
-                              alt={`${activity.title} image ${index + 1}`}
-                              width={1200}
-                              height={1200}
-                              className="aspect-square w-full rounded-md border border-[#dedede] object-cover"
-                            />
-                          </figure>
-                        ))}
-                      </div>
-                      <p className="mt-4 text-center text-xs text-[#777]">
-                        {imageUrls.length} image
-                        {imageUrls.length > 1 ? "s" : ""}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="mt-4 text-sm italic text-[#7d7d7d]">
-                      No gallery images uploaded.
-                    </p>
-                  )}
+                  <ActivityGallery imageUrls={imageUrls} title={activity.title} />
                 </section>
               </div>
             </div>
