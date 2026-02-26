@@ -4,6 +4,25 @@ const globalForPrismaAdmin = globalThis as unknown as {
   prismaAdmin?: PrismaClient;
 };
 
+const tuneConnectionUrl = (rawUrl: string) => {
+  try {
+    const parsed = new URL(rawUrl);
+
+    // Prevent Prisma from opening many DB connections per runtime instance.
+    if (!parsed.searchParams.has("connection_limit")) {
+      parsed.searchParams.set("connection_limit", "1");
+    }
+
+    if (!parsed.searchParams.has("pool_timeout")) {
+      parsed.searchParams.set("pool_timeout", "20");
+    }
+
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+};
+
 const adminDatabaseUrl =
   process.env.DATABASE_URL_ADMIN ?? process.env.DATABASE_URL;
 
@@ -18,13 +37,13 @@ const prismaAdmin =
   new PrismaClient({
     datasources: {
       db: {
-        url: adminDatabaseUrl,
+        url: tuneConnectionUrl(adminDatabaseUrl),
       },
     },
     log: ["warn", "error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
+if (!globalForPrismaAdmin.prismaAdmin) {
   globalForPrismaAdmin.prismaAdmin = prismaAdmin;
 }
 
